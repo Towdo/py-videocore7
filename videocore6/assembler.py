@@ -208,8 +208,8 @@ class Signals(set):
             frozenset(['thrsw', 'ldvary', 'ldunif']): 11,
             frozenset(['ldunifrf']): 12,
             frozenset(['thrsw', 'ldunifrf']): 13,
-            frozenset(['smimm', 'ldvary']): 14,
-            frozenset(['smimm']): 15,
+            frozenset(['smimm_a']): 14,
+            frozenset(['smimm_b']): 15,
             frozenset(['ldtlb']): 16,
             frozenset(['ldtlbu']): 17,
             frozenset(['wrtmuc']): 18,
@@ -220,7 +220,8 @@ class Signals(set):
             frozenset(['rot']): 23,
             frozenset(['ldunifa']): 24,
             frozenset(['ldunifarf']): 25,
-            frozenset(['smimm', 'ldtmu']): 31,
+            frozenset(['smimm_c']): 30,
+            frozenset(['smimm_d']): 31,
         }[frozenset([sig.name for sig in self])] << 53
 
     def is_write(self):
@@ -253,7 +254,10 @@ class Instruction(object):
         'ldvpm': Signal('ldvpm'),
         'ldtlb': WriteSignal('ldtlb'),
         'ldtlbu': WriteSignal('ldtlbu'),
-        'smimm': Signal('smimm'),
+        'smimm_a': Signal('smimm_a'),
+        'smimm_b': Signal('smimm_b'),
+        'smimm_c': Signal('smimm_c'),
+        'smimm_d': Signal('smimm_d'),
         'ucb': Signal('ucb'),
         'rot': RotateSignal('rot'),
         'wrtmuc': Signal('wrtmuc'),
@@ -939,8 +943,11 @@ class ALU(Instruction):
         for sig in sigs:
             raddr.add(sig)
 
-        if raddr.has_smimm() and not sigs.is_rotate():
-            sigs.add(Instruction.SIGNALS['smimm'])
+        if raddr.has_smimm_a() and not sigs.is_rotate():
+            sigs.add(Instruction.SIGNALS['smimm_a'])
+
+        if raddr.has_smimm_b() and not sigs.is_rotate():
+            sigs.add(Instruction.SIGNALS['smimm_b'])
 
         cond = ALUConditions(add_op.cond, mul_op.cond)
 
