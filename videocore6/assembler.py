@@ -429,8 +429,11 @@ class ALURaddrs(object):
         self.raddr_1 = raddr_1
         self.raddr_2 = raddr_2
 
-    def has_smimm(self):
-        return isinstance(self.b, (int, float))
+    def has_smimm_1(self):
+        return isinstance(self.raddr_1, (int, float))
+    
+    def has_smimm_2(self):
+        return isinstance(self.raddr_2, (int, float))
 
     def pack(self):
         raddr_a, raddr_b = 0, 0
@@ -491,7 +494,7 @@ class ALUOp(object):
             self.sigs.add(sig)
 
         if self.name in self.MUX_A:
-            src1 = self.MUX_A[self.name]
+            src1 = Instruction.REGISTERS[f'rf{self.MUX_A[self.name]}']
         else:
             if src1 is None:
                 raise AssembleError(f'"{self.name}" requires src1')
@@ -499,7 +502,7 @@ class ALUOp(object):
                 raise AssembleError(f'Invalid src1 object')
 
         if self.name in self.MUX_B:
-            src2 = self.MUX_B[self.name]
+            src2 = Instruction.REGISTERS[f'rf{self.MUX_B[self.name]}']
         else:
             if src2 is None:
                 raise AssembleError(f'"{self.name}" requires src2')
@@ -575,8 +578,8 @@ class AddALUOp(ALUOp):
             | (self.dst.magic << 44) \
             | (self.dst.waddr << 32) \
             | (op << 24) \
-            | (raddr_b << 0) \
-            | (raddr_a << 6)
+            | ((raddr_b.waddr if isinstance(raddr_b, Register) else raddr_b) << 0) \
+            | ((raddr_a.waddr if isinstance(raddr_a, Register) else raddr_a) << 6)
 
     OPERATIONS = {
         # FADD is FADDNF depending on the order of the mux_a/mux_b.
@@ -690,13 +693,13 @@ class AddALUOp(ALUOp):
         'setrevf': 7,
 
         'nop': 0,
-        'tidx': 0,
-        'eidx': 0,
-        'lr': 0,
-        'vfla': 0,
-        'vflna': 0,
-        'vflb': 0,
-        'vflnb': 0,
+        'tidx': 1,
+        'eidx': 2,
+        'lr': 3,
+        'vfla': 4,
+        'vflna': 5,
+        'vflb': 6,
+        'vflnb': 7,
 
         'fround': 0,
         'ftoin': 3,
@@ -764,8 +767,8 @@ class MulALUOp(ALUOp):
             | (op << 58) \
             | (self.dst.magic << 45) \
             | (self.dst.waddr << 38) \
-            | (raddr_d << 12) \
-            | (raddr_c << 18)
+            | ((raddr_d.waddr if isinstance(raddr_d, Register) else raddr_d) << 12) \
+            | ((raddr_c.waddr if isinstance(raddr_c, Register) else raddr_c) << 18)
 
     OPERATIONS = {
         'add': 1,
@@ -836,11 +839,18 @@ class ALU(Instruction):
         # for sig in sigs:
         #     raddr.add(sig)
 
-        # if raddr.has_smimm_a() and not sigs.is_rotate():
-        #     sigs.add(Instruction.SIGNALS['smimm_a'])
+        print(add_op.raddr.raddr_1, add_op.raddr.raddr_2)
+        print(mul_op.raddr.raddr_1, mul_op.raddr.raddr_2)
 
-        # if raddr.has_smimm_b() and not sigs.is_rotate():
-        #     sigs.add(Instruction.SIGNALS['smimm_b'])
+        if add_op.raddr.has_smimm_1() and not sigs.is_rotate():
+            sigs.add(Instruction.SIGNALS['smimm_a'])
+        if add_op.raddr.has_smimm_2() and not sigs.is_rotate():
+            sigs.add(Instruction.SIGNALS['smimm_b'])
+        if mul_op.raddr.has_smimm_1() and not sigs.is_rotate():
+            sigs.add(Instruction.SIGNALS['smimm_c'])
+        if mul_op.raddr.has_smimm_2() and not sigs.is_rotate():
+            sigs.add(Instruction.SIGNALS['smimm_d'])
+
 
         cond = ALUConditions(add_op.cond, mul_op.cond)
 
