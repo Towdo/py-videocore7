@@ -493,17 +493,17 @@ class ALUOp(object):
         if self.name in self.MUX_A:
             src1 = self.MUX_A[self.name]
         else:
-            if self.src1 is None:
+            if src1 is None:
                 raise AssembleError(f'"{self.name}" requires src1')
-            if not isinstance(self.src1, (int, float, Register)):
+            if not isinstance(src1, (int, float, Register)):
                 raise AssembleError(f'Invalid src1 object')
 
         if self.name in self.MUX_B:
             src2 = self.MUX_B[self.name]
         else:
-            if self.src2 is None:
+            if src2 is None:
                 raise AssembleError(f'"{self.name}" requires src2')
-            if not isinstance(self.src2, (int, float, Register)):
+            if not isinstance(src2, (int, float, Register)):
                 raise AssembleError(f'Invalid src2 object')
 
         self.raddr = ALURaddrs(src1, src2)
@@ -575,8 +575,8 @@ class AddALUOp(ALUOp):
             | (self.dst.magic << 44) \
             | (self.dst.waddr << 32) \
             | (op << 24) \
-            | (raddr_b << 15) \
-            | (raddr_a << 12)
+            | (raddr_b << 0) \
+            | (raddr_a << 6)
 
     OPERATIONS = {
         # FADD is FADDNF depending on the order of the mux_a/mux_b.
@@ -764,7 +764,7 @@ class MulALUOp(ALUOp):
             | (op << 58) \
             | (self.dst.magic << 45) \
             | (self.dst.waddr << 38) \
-            | (raddr_d << 21) \
+            | (raddr_d << 12) \
             | (raddr_c << 18)
 
     OPERATIONS = {
@@ -775,7 +775,7 @@ class MulALUOp(ALUOp):
         'smul24': 9,
         'multop': 10,
         'fmov': 14,
-        'nop': 15,
+        'nop': 14,
         'mov': 15,
         'fmul': 16,
     }
@@ -785,7 +785,7 @@ class MulALUOp(ALUOp):
     }
 
     MUX_B = {
-        'nop': 4,
+        'nop': 2**6-1,  #FIXME: WHY
         'mov': 7,
         'fmov': 0,
     }
