@@ -425,110 +425,12 @@ class ALUConditions(object):
 
 class ALURaddrs(object):
 
-    def __init__(self):
-        self.a = None
-        self.b = None
+    def __init__(self, raddr_1, raddr_2):
+        self.raddr_1 = raddr_1
+        self.raddr_2 = raddr_2
 
     def has_smimm(self):
         return isinstance(self.b, (int, float))
-
-    def determine_mux(self, op_mux, regs):
-
-        reg_a, reg_b = regs
-        mux_a, mux_b = op_mux
-
-        assert (mux_a is None and isinstance(reg_a, (int, float, Register))) or (mux_a is not None and reg_a is None)
-        assert (mux_b is None and isinstance(reg_b, (int, float, Register))) or (mux_b is not None and reg_b is None)
-        assert (mux_a is not None and mux_b is not None) or (mux_a is None)
-
-        def _to_mux(reg):
-
-            if isinstance(reg, (int, float)):
-                assert reg == self.b, f'Bug: small immediate {reg} is not added yet'
-                return 7
-            elif isinstance(reg, Register):
-                if reg.magic == 0:
-                    if isinstance(self.a, Register) and self.a.name == reg.name:
-                        return 6
-                    if isinstance(self.b, Register) and self.b.name == reg.name:
-                        return 7
-                    assert reg == self.b, f'Bug: register {reg} is not added yet'
-                elif reg.waddr < 6:
-                    return reg.waddr
-                else:
-                    assert reg == self.b, f'Bug: register {reg} should be failed to added'
-            else:
-                assert False, 'Bug: Type error'
-
-        if mux_a is None:
-            mux_a = _to_mux(reg_a)
-        if mux_b is None:
-            mux_b = _to_mux(reg_b)
-
-        return mux_a, mux_b
-
-    def add(self, reg):
-
-        if reg is None:
-            return
-
-        assert isinstance(reg, (int, float, Register, Signal)), 'Bug: Type error'
-
-        if isinstance(reg, Signal):
-            sig = reg
-            if not sig.is_rotate():
-                return
-            if self.b is None:
-                self.b = sig
-            elif isinstance(self.b, Signal) and self.b.is_rotate() and self.b.rotate_count() == sig.rotate_count():
-                pass
-            else:
-                if isinstance(self.b, (int, float)):
-                    raise AssembleError(f'Conflict small immediates {self.b} and signal {sig.name}')
-                elif isinstance(self.b, Register):
-                    raise AssembleError(f'Conflict register {self.b} and signal {sig.name}')
-                elif isinstance(self.b, Signal):
-                    raise AssembleError(f'Conflict signal {self.b} and signal {sig.name}')
-                else:
-                    assert False, 'Bug: Lack of type exhaustivity'
-        elif isinstance(reg, (int, float)):
-            # small immediate should be b
-            if self.b is None:
-                self.b = reg
-            elif self.b == reg:
-                pass
-            else:
-                if isinstance(self.b, (int, float)):
-                    raise AssembleError(f'Conflict small immediates {self.b} and small immediates {reg.name}')
-                elif isinstance(self.b, Register):
-                    raise AssembleError(f'Conflict register {self.b} and small immediates {reg.name}')
-                elif isinstance(self.b, Signal):
-                    raise AssembleError(f'Conflict signal {self.b} small immediates {reg.name}')
-                else:
-                    assert False, 'Bug: Lack of type exhaustivity'
-        else:
-            # already exist
-            if self.a is not None:
-                if self.a.name == reg.name:
-                    return
-            if self.b is not None and isinstance(self.b, Register):
-                if self.b.name == reg.name:
-                    return
-
-            # not yet
-            if reg.magic == 0:
-                if self.a is None:
-                    self.a = reg
-                    return
-                elif self.b is None:
-                    self.b = reg
-                    return
-                else:
-                    raise AssembleError('Too many register files read')
-            elif reg.waddr < 6:
-                return
-            else:
-                raise AssembleError(f'Invalid source register {reg.name}')
 
     def pack(self):
         raddr_a, raddr_b = 0, 0
@@ -583,18 +485,13 @@ class ALUOp(object):
         self.name = opr
         self.op = self.OPERATIONS[opr]
         self.dst = dst
-        self.src1 = src1
-        self.src2 = src2
         self.cond = cond
         self.sigs = Signals()
         if sig is not None:
             self.sigs.add(sig)
 
-        self.mux_a = None
-        self.mux_b = None
-
         if self.name in self.MUX_A:
-            self.mux_a = self.MUX_A[self.name]
+            src1 = self.MUX_A[self.name]
         else:
             if self.src1 is None:
                 raise AssembleError(f'"{self.name}" requires src1')
@@ -602,12 +499,14 @@ class ALUOp(object):
                 raise AssembleError(f'Invalid src1 object')
 
         if self.name in self.MUX_B:
-            self.mux_b = self.MUX_B[self.name]
+            src2 = self.MUX_B[self.name]
         else:
             if self.src2 is None:
                 raise AssembleError(f'"{self.name}" requires src2')
             if not isinstance(self.src2, (int, float, Register)):
                 raise AssembleError(f'Invalid src2 object')
+
+        self.raddr = ALURaddrs(src1, src2)
 
     def pack(self, raddr):
         assert False, 'Bug: Not implemented'
@@ -618,10 +517,10 @@ class AddALUOp(ALUOp):
     def __init__(self, opr, *args, **kwargs):
         super(AddALUOp, self).__init__(opr, *args, **kwargs)
 
-    def pack(self, raddr):
+    def pack(self):
 
         op = self.op
-        mux_a, mux_b = raddr.determine_mux((self.mux_a, self.mux_b), (self.src1, self.src2))
+        raddr_a, raddr_b = self.raddr.raddr_1, self.raddr.raddr_2
 
         if self.name in ['fadd', 'faddnf', 'fsub', 'fmax', 'fmin', 'fcmp']:
 
@@ -630,10 +529,10 @@ class AddALUOp(ALUOp):
             a_unpack = self.src1.unpack_bits[0] if isinstance(self.src1, Register) else Register.INPUT_MODIFIER['none'][0]
             b_unpack = self.src2.unpack_bits[0] if isinstance(self.src2, Register) else Register.INPUT_MODIFIER['none'][0]
 
-            ordering = a_unpack * 8 + mux_a > b_unpack * 8 + mux_b
+            ordering = a_unpack * 8 + raddr_a > b_unpack * 8 + raddr_b
             if (self.name in ['fmin', 'fadd'] and ordering) or (self.name in ['fmax', 'faddnf'] and not ordering):
                 a_unpack, b_unpack = b_unpack, a_unpack
-                mux_a, mux_b = mux_b, mux_a
+                raddr_a, raddr_b = raddr_b, raddr_a
 
             op |= a_unpack << 2
             op |= b_unpack << 0
@@ -643,7 +542,7 @@ class AddALUOp(ALUOp):
             if self.src1.unpack_bits == Register.INPUT_MODIFIER['abs']:
                 raise AssembleError('"abs" unpacking is not allowed here')
 
-            mux_b |= self.dst.pack_bits
+            raddr_b |= self.dst.pack_bits
             a_unpack = self.src1.unpack_bits[0] if isinstance(self.src1, Register) else Register.INPUT_MODIFIER['none'][0]
             op = (op & ~(1 << 2)) | a_unpack << 2
 
@@ -676,8 +575,8 @@ class AddALUOp(ALUOp):
             | (self.dst.magic << 44) \
             | (self.dst.waddr << 32) \
             | (op << 24) \
-            | (mux_b << 15) \
-            | (mux_a << 12)
+            | (raddr_b << 15) \
+            | (raddr_a << 12)
 
     OPERATIONS = {
         # FADD is FADDNF depending on the order of the mux_a/mux_b.
@@ -835,10 +734,10 @@ class MulALUOp(ALUOp):
     def __init__(self, opr, *args, **kwargs):
         super(MulALUOp, self).__init__(opr, *args, **kwargs)
 
-    def pack(self, raddr):
+    def pack(self):
 
         op = self.op
-        mux_a, mux_b = raddr.determine_mux((self.mux_a, self.mux_b), (self.src1, self.src2))
+        raddr_c, raddr_d = self.raddr.raddr_1, self.raddr.raddr_2
 
         if self.name in ['vfmul']:
 
@@ -859,14 +758,14 @@ class MulALUOp(ALUOp):
             a_unpack = self.src1.unpack_bits[0] if isinstance(self.src1, Register) else 0
 
             op |= (self.dst.pack_bits >> 1) & 1
-            mux_b = ((self.dst.pack_bits & 1) << 2) | a_unpack
+            raddr_d = ((self.dst.pack_bits & 1) << 2) | a_unpack
 
         return 0 \
             | (op << 58) \
             | (self.dst.magic << 45) \
             | (self.dst.waddr << 38) \
-            | (mux_b << 21) \
-            | (mux_a << 18)
+            | (raddr_d << 21) \
+            | (raddr_c << 18)
 
     OPERATIONS = {
         'add': 1,
@@ -931,32 +830,26 @@ class ALU(Instruction):
         if mul_op is None:
             mul_op = MulALUOp('nop')
 
-        raddr = ALURaddrs()
-        raddr.add(add_op.src1)
-        raddr.add(add_op.src2)
-        raddr.add(mul_op.src1)
-        raddr.add(mul_op.src2)
-
         sigs = Signals()
         sigs.add(add_op.sigs)
         sigs.add(mul_op.sigs)
-        for sig in sigs:
-            raddr.add(sig)
+        # for sig in sigs:
+        #     raddr.add(sig)
 
-        if raddr.has_smimm_a() and not sigs.is_rotate():
-            sigs.add(Instruction.SIGNALS['smimm_a'])
+        # if raddr.has_smimm_a() and not sigs.is_rotate():
+        #     sigs.add(Instruction.SIGNALS['smimm_a'])
 
-        if raddr.has_smimm_b() and not sigs.is_rotate():
-            sigs.add(Instruction.SIGNALS['smimm_b'])
+        # if raddr.has_smimm_b() and not sigs.is_rotate():
+        #     sigs.add(Instruction.SIGNALS['smimm_b'])
 
         cond = ALUConditions(add_op.cond, mul_op.cond)
 
         return 0 \
             | sigs.pack() \
             | cond.pack(sigs) \
-            | add_op.pack(raddr) \
-            | mul_op.pack(raddr) \
-            | raddr.pack()
+            | add_op.pack() \
+            | mul_op.pack() #\
+            # | raddr.pack()
 
 
 class Link(object):
