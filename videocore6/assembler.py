@@ -779,7 +779,7 @@ class MulALUOp(ALUOp):
         'multop': 10,
         'fmov': 14,
         'nop': 14,
-        'mov': 15,
+        'mov': 14,
         'fmul': 16,
     }
 
@@ -789,7 +789,7 @@ class MulALUOp(ALUOp):
 
     MUX_B = {
         'nop': 2**6-1,  #FIXME: WHY
-        'mov': 7,
+        'mov': 4,
         'fmov': 0,
     }
 
