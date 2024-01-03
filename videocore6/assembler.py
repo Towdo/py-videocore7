@@ -642,21 +642,23 @@ class AddALUOp(ALUOp):
         'ftoin': 245,
         'ftrunc': 245,
         'ftoiz': 245,
-        'ffloor': 246,
-        'ftouz': 246,
-        'fceil': 246,
+        'ffloor': 245,
+        'ftouz': 245,
+        'fceil': 245,
         'ftoc': 246,
-        'fdx': 247,
-        'fdy': 247,
+        'fdx': 246,
+        'fdy': 246,
 
         # The stvpms are distinguished by the waddr field.
         'stvpmv': 248,
         'stvpmd': 248,
         'stvpmp': 248,
 
-        'itof': 252,
-        'clz': 252,
-        'utof': 252,
+        'mov': 249,
+
+        'itof': 246,
+        'clz': 186,
+        'utof': 246,
     }
 
     MUX_A = {
@@ -684,7 +686,7 @@ class AddALUOp(ALUOp):
         'flapush': 2,
         'flbpush': 3,
         'flpop': 4,
-        '_op_recip': 5,
+        # '_op_recip': 5,   #???
         'setmsf': 6,
         'setrevf': 7,
 
@@ -699,32 +701,34 @@ class AddALUOp(ALUOp):
 
         'fround': 0,
         'ftoin': 3,
-        'ftrunc': 4,
-        'ftoiz': 7,
-        'ffloor': 0,
-        'ftouz': 3,
-        'fceil': 4,
-        'ftoc': 7,
+        'ftrunc': 16,
+        'ftoiz': 19,
+        'ffloor': 32,
+        'ftouz': 35,
+        'fceil': 48,
+        'ftoc': 51,
         'fdx': 0,
-        'fdy': 4,
+        'fdy': 16,
 
-        'msf': 2,
-        'revf': 2,
-        'iid': 2,
-        'sampid': 2,
-        'barrierid': 2,
-        'tmuwt': 2,
-        'vpmwt': 2,
+        'msf': 10,
+        'revf': 11,
+        'iid': 12,
+        'sampid': 13,
+        'barrierid': 14,
+        'tmuwt': 15,
+        'vpmwt': 16,
 
-        '_op_rsqrt': 3,
-        '_op_exp': 4,
-        '_op_log': 5,
-        '_op_sin': 6,
-        '_op_rsqrt2': 7,
+        '_op_rsqrt': 33,
+        '_op_exp': 34,
+        '_op_log': 35,
+        '_op_sin': 36,
+        '_op_rsqrt2': 37,
 
-        'itof': 0,
-        'clz': 3,
-        'utof': 4,
+        'mov': 3,
+
+        'itof': 32,
+        'clz': 5,
+        'utof': 36,
     }
 
 
