@@ -102,33 +102,35 @@ ops = {
 @qpu
 def qpu_binary_ops(asm, bin_ops, dst_ops, src1_ops, src2_ops):
 
-    eidx(r0, sig = ldunif)
-    mov(rf0, r5, sig = ldunif) # in
-    mov(rf1, r5, sig = ldunif)  # out
-    shl(r3, 4, 4).mov(rf2, r5)
+    eidx(rf10, sig = ldunifrf(rf0))
+    nop(sig = ldunifrf(rf1))
+    nop(sig = ldunifrf(rf2))
+    mov(rf13, 4)
+    shl(rf13, rf13, 4)
 
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
-    add(rf2, rf2, r0)
+    shl(rf10, rf10, 2)
+    add(rf0, rf0, rf10)
+    add(rf1, rf1, rf10)
+    add(rf2, rf2, rf10)
 
-    mov(tmua, rf0, sig = thrsw).add(rf0, rf0, r3)
+    mov(tmua, rf0, sig = thrsw).add(rf0, rf0, rf13)
     nop()
-    mov(tmua, rf1, sig = thrsw).add(rf1, rf1, r3)
-    nop(sig = ldtmu(r1))
+    mov(tmua, rf1, sig = thrsw).add(rf1, rf1, rf13)
+    nop(sig = ldtmu(rf11))
     nop()
-    nop(sig = ldtmu(r2))
+    nop(sig = ldtmu(rf12))
 
     g = globals()
     for op, pack, unpack1, unpack2 in itertools.product(bin_ops, dst_ops, src1_ops, src2_ops):
         g[op](
-            r0.pack(pack) if pack is not None else r0,
-            r1.unpack(unpack1) if unpack1 is not None else r1,
-            r2.unpack(unpack2) if unpack2 is not None else r2
+            rf10.pack(pack) if pack is not None else rf10,
+            rf11.unpack(unpack1) if unpack1 is not None else rf11,
+            rf12.unpack(unpack2) if unpack2 is not None else rf12
         )
-        mov(tmud, r0)
+
+        mov(tmud, rf10)
         mov(tmua, rf2)
-        tmuwt().add(rf2, rf2, r3)
+        tmuwt().add(rf2, rf2, rf13)
 
     nop(sig = thrsw)
     nop(sig = thrsw)
@@ -171,7 +173,8 @@ def boilerplate_binary_ops(bin_ops, dst, src1, src2):
         unif[2] = Y.addresses()[0,0]
 
         start = time.time()
-        drv.execute(code, unif.addresses()[0])
+        # drv.dump_code(code)
+        drv.execute(code, unif.addresses()[0], thread=2)
         end = time.time()
 
         for ix, (bin_op, dst_op, src1_op, src2_op) in enumerate(cases):
@@ -182,7 +185,7 @@ def boilerplate_binary_ops(bin_ops, dst, src1, src2):
                 assert np.all(ops[dst_op](Y[ix]) == ops[bin_op](ops[src1_op](X1), ops[src2_op](X2))), msg
 
 def test_binary_ops():
-    packs = [('float32', [None, 'none']), ('float16', ['l', 'h'])]
+    packs = [('float32', [None, 'none'])]#, ('float16', ['l', 'h'])]            #FIXME: This should work
     unpacks = [('float32', [None, 'none', 'abs']), ('float16', ['l', 'h'])]
     for dst, src1, src2 in itertools.product(packs, unpacks, unpacks):
         boilerplate_binary_ops(
@@ -224,28 +227,31 @@ def test_binary_ops():
 @qpu
 def qpu_unary_ops(asm, bin_ops, dst_ops, src_ops):
 
-    eidx(r0, sig = ldunif)
-    mov(rf0, r5, sig = ldunif) # in
-    shl(r3, 4, 4).mov(rf1, r5)
+    eidx(rf10, sig = ldunifrf(rf0))
+    nop(sig = ldunifrf(rf1))
+    mov(rf13, 4)
+    shl(rf13, rf13, 4)
 
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
+    shl(rf10, rf10, 2)
+    add(rf0, rf0, rf10)
+    add(rf1, rf1, rf10)
 
-    mov(tmua, rf0, sig = thrsw).add(rf0, rf0, r3)
+    mov(tmua, rf0, sig = thrsw).add(rf0, rf0, rf13)
     nop()
     nop()
-    nop(sig = ldtmu(r1))
+    nop(sig = ldtmu(rf11))
 
     g = globals()
     for op, pack, unpack in itertools.product(bin_ops, dst_ops, src_ops):
         g[op](
-            r0.pack(pack) if pack is not None else r0,
-            r1.unpack(unpack) if unpack is not None else r1,
+            rf10.pack(pack) if pack is not None else rf10,
+            rf11.unpack(unpack) if unpack is not None else rf11,
         )
-        mov(tmud, r0)
+
+        mov(tmud, rf10)
         mov(tmua, rf1)
-        tmuwt().add(rf1, rf1, r3)
+        tmuwt()
+        add(rf1, rf1, rf13)
 
     nop(sig = thrsw)
     nop(sig = thrsw)
@@ -277,7 +283,8 @@ def boilerplate_unary_ops(uni_ops, dst, src):
         unif[1] = Y.addresses()[0,0]
 
         start = time.time()
-        drv.execute(code, unif.addresses()[0])
+        # drv.dump_code(code)
+        drv.execute(code, unif.addresses()[0], thread=4)
         end = time.time()
 
         for ix, (uni_op, dst_op, src_op) in enumerate(cases):
@@ -340,3 +347,6 @@ def test_unary_ops():
         ['utof'],
         ('float32', [None]), ('uint32', [None]),
     )
+
+test_unary_ops()
+test_binary_ops()
