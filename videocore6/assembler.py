@@ -423,23 +423,20 @@ class ALUConditions(object):
         return result << 46
 
 
-class ALURaddrs(object):
+class ALURaddr(object):
 
-    def __init__(self, raddr_1, raddr_2):
-        self.raddr_1 = raddr_1
-        self.raddr_2 = raddr_2
+    def __init__(self, raddr):
+        self.raddr = raddr
+        self.unpack = "none"
 
-    def has_smimm_1(self):
-        return isinstance(self.raddr_1, (int, float))
-    
-    def has_smimm_2(self):
-        return isinstance(self.raddr_2, (int, float))
+    def has_smimm(self):
+        return isinstance(self.raddr, (int, float))
 
     def pack(self):
-        raddr_a, raddr_b = 0, 0
+        raddr = 0
 
-        if isinstance(self.a, Register):
-            raddr_a = self.a.waddr
+        if isinstance(self.raddr, Register):
+            raddr = self.raddr.waddr
 
         def pack_smimms_int(x):
             smimms_int = {}
@@ -458,21 +455,19 @@ class ALURaddrs(object):
                 smimms_float[2 ** (i - 8)] = i + 32
             return smimms_float[x]
 
-        if isinstance(self.b, int):
-            raddr_b = pack_smimms_int(self.b)
-        if isinstance(self.b, float):
-            raddr_b = pack_smimms_float(self.b)
-        if isinstance(self.b, Register):
-            raddr_b = self.b.waddr
-        if isinstance(self.b, Signal):
-            if isinstance(self.b.rot, int):
-                raddr_b = pack_smimms_int(self.b.rot)
-            if isinstance(self.b.rot, Register):
-                raddr_b = 0  # rotate by r5
+        if isinstance(self.raddr, int):
+            raddr = pack_smimms_int(self.raddr)
+        if isinstance(self.raddr, float):
+            raddr = pack_smimms_float(self.raddr)
+        if isinstance(self.raddr, Register):
+            raddr = self.raddr.waddr
+        if isinstance(self.raddr, Signal):
+            if isinstance(self.raddr.rot, int):
+                raddr = pack_smimms_int(self.raddr.rot)
+            if isinstance(self.raddr.rot, Register):
+                raddr = 0  # rotate by r5
 
-        return 0 \
-            | (raddr_a << 6) \
-            | (raddr_b << 0)
+        return raddr
 
 
 class ALUOp(object):
@@ -509,7 +504,8 @@ class ALUOp(object):
             if not isinstance(src2, (int, float, Register)):
                 raise AssembleError(f'Invalid src2 object')
 
-        self.raddr = ALURaddrs(src1, src2)
+        self.raddr_1 = ALURaddr(src1)
+        self.raddr_2 = ALURaddr(src2)
 
     def pack(self, raddr):
         assert False, 'Bug: Not implemented'
@@ -523,14 +519,15 @@ class AddALUOp(ALUOp):
     def pack(self):
 
         op = self.op
-        raddr_a, raddr_b = self.raddr.raddr_1, self.raddr.raddr_2
+        raddr_a, raddr_b = self.raddr_1.pack(), self.raddr_2.pack()
 
         if self.name in ['fadd', 'faddnf', 'fsub', 'fmax', 'fmin', 'fcmp']:
 
-            op |= self.dst.pack_bits << 4
+            if self.name is not 'fcmp':
+                op |= self.dst.pack_bits << 4
 
-            a_unpack = self.src1.unpack_bits[0] if isinstance(self.src1, Register) else Register.INPUT_MODIFIER['none'][0]
-            b_unpack = self.src2.unpack_bits[0] if isinstance(self.src2, Register) else Register.INPUT_MODIFIER['none'][0]
+            a_unpack = self.raddr_1.raddr.unpack_bits[0] if isinstance(self.raddr_1.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
+            b_unpack = self.raddr_2.raddr.unpack_bits[0] if isinstance(self.raddr_2.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
 
             ordering = a_unpack * 8 + raddr_a > b_unpack * 8 + raddr_b
             if (self.name in ['fmin', 'fadd'] and ordering) or (self.name in ['fmax', 'faddnf'] and not ordering):
@@ -542,28 +539,27 @@ class AddALUOp(ALUOp):
 
         if self.name in ['fround', 'ftrunc', 'ffloor', 'fceil', 'fdx', 'fdy']:
 
-            if self.src1.unpack_bits == Register.INPUT_MODIFIER['abs']:
+            if self.raddr_1.raddr.unpack_bits == Register.INPUT_MODIFIER['abs']:
                 raise AssembleError('"abs" unpacking is not allowed here')
 
             raddr_b |= self.dst.pack_bits
-            a_unpack = self.src1.unpack_bits[0] if isinstance(self.src1, Register) else Register.INPUT_MODIFIER['none'][0]
-            op = (op & ~(1 << 2)) | a_unpack << 2
+            a_unpack = self.raddr_1.raddr.unpack_bits[0] if isinstance(self.raddr_1.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
+            raddr_b = (raddr_b & ~(3 << 2)) | a_unpack << 2
 
         if self.name in ['ftoin', 'ftoiz', 'ftouz', 'ftoc']:
 
             if self.dst.pack_bits != Register.OUTPUT_MODIFIER['none']:
                 raise AssembleError('packing is not allowed here')
-            if self.src1.unpack_bits == Register.INPUT_MODIFIER['abs']:
+            if self.raddr_1.raddr.unpack_bits == Register.INPUT_MODIFIER['abs']:
                 raise AssembleError('"abs" unpacking is not allowed here')
 
-            a_unpack = self.src1.unpack_bits[0] if isinstance(self.src1, Register) else Register.INPUT_MODIFIER['none'][0]
-            op &= ~0b1100
-            op |= a_unpack << 2
+            a_unpack = self.raddr_1.raddr.unpack_bits[0] if isinstance(self.raddr_1.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
+            raddr_b |= (raddr_b & ~(3 << 2)) | a_unpack << 2
 
         if self.name in ['vfpack']:
 
-            a_unpack = self.src1.unpack_bits[0] if isinstance(self.src1, Register) else Register.INPUT_MODIFIER['none'][0]
-            b_unpack = self.src2.unpack_bits[0] if isinstance(self.src2, Register) else Register.INPUT_MODIFIER['none'][0]
+            a_unpack = self.raddr_1.raddr.unpack_bits[0] if isinstance(self.raddr_1.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
+            b_unpack = self.raddr_2.raddr.unpack_bits[0] if isinstance(self.raddr_2.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
 
             op &= ~0b101
             op |= a_unpack << 2
@@ -571,15 +567,15 @@ class AddALUOp(ALUOp):
 
         if self.name in ['vfmin', 'vfmax']:
 
-            a_unpack = self.src1.unpack_bits[1] if isinstance(self.src1, Register) else Register.INPUT_MODIFIER['none'][1]
+            a_unpack = self.raddr_1.raddr.unpack_bits[1] if isinstance(self.raddr_1.raddr, Register) else Register.INPUT_MODIFIER['none'][1]
             op |= a_unpack
 
         return 0 \
             | (self.dst.magic << 44) \
             | (self.dst.waddr << 32) \
             | (op << 24) \
-            | ((raddr_b.waddr if isinstance(raddr_b, Register) else raddr_b) << 0) \
-            | ((raddr_a.waddr if isinstance(raddr_a, Register) else raddr_a) << 6)
+            | (raddr_a << 6) \
+            | (raddr_b << 0)
 
     OPERATIONS = {
         # FADD is FADDNF depending on the order of the mux_a/mux_b.
@@ -740,17 +736,17 @@ class MulALUOp(ALUOp):
     def pack(self):
 
         op = self.op
-        raddr_c, raddr_d = self.raddr.raddr_1, self.raddr.raddr_2
+        raddr_c, raddr_d = self.raddr_1.pack(), self.raddr_2.pack()
 
         if self.name in ['vfmul']:
 
-            a_unpack = self.src1.unpack_bits[1] if isinstance(self.src1, Register) else Register.INPUT_MODIFIER['none'][1]
+            a_unpack = self.raddr_1.raddr.unpack_bits[1] if isinstance(self.raddr_1.raddr, Register) else Register.INPUT_MODIFIER['none'][1]
             op += a_unpack
 
         if self.name in ['fmul']:
 
-            a_unpack = self.src1.unpack_bits[0] if isinstance(self.src1, Register) else Register.INPUT_MODIFIER['none'][0]
-            b_unpack = self.src2.unpack_bits[0] if isinstance(self.src2, Register) else Register.INPUT_MODIFIER['none'][0]
+            a_unpack = self.raddr_1.raddr.unpack_bits[0] if isinstance(self.raddr_1.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
+            b_unpack = self.raddr_2.raddr.unpack_bits[0] if isinstance(self.raddr_2.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
 
             op += self.dst.pack_bits << 4
             op |= a_unpack << 2
@@ -758,17 +754,17 @@ class MulALUOp(ALUOp):
 
         if self.name in ['fmov']:
 
-            a_unpack = self.src1.unpack_bits[0] if isinstance(self.src1, Register) else 0
+            a_unpack = self.raddr_1.raddr.unpack_bits[0] if isinstance(self.raddr_1.raddr, Register) else 1
 
-            op |= (self.dst.pack_bits >> 1) & 1
-            raddr_d = ((self.dst.pack_bits & 1) << 2) | a_unpack
+            raddr_d |= self.dst.pack_bits
+            raddr_d |= a_unpack << 2
 
         return 0 \
             | (op << 58) \
             | (self.dst.magic << 45) \
             | (self.dst.waddr << 38) \
-            | ((raddr_d.waddr if isinstance(raddr_d, Register) else raddr_d) << 12) \
-            | ((raddr_c.waddr if isinstance(raddr_c, Register) else raddr_c) << 18)
+            | (raddr_c << 18) \
+            | (raddr_d << 12)
 
     OPERATIONS = {
         'add': 1,
@@ -839,16 +835,13 @@ class ALU(Instruction):
         # for sig in sigs:
         #     raddr.add(sig)
 
-        print(add_op.raddr.raddr_1, add_op.raddr.raddr_2)
-        print(mul_op.raddr.raddr_1, mul_op.raddr.raddr_2)
-
-        if add_op.raddr.has_smimm_1() and not sigs.is_rotate():
+        if add_op.raddr_1.has_smimm() and not sigs.is_rotate():
             sigs.add(Instruction.SIGNALS['smimm_a'])
-        if add_op.raddr.has_smimm_2() and not sigs.is_rotate():
+        if add_op.raddr_2.has_smimm() and not sigs.is_rotate():
             sigs.add(Instruction.SIGNALS['smimm_b'])
-        if mul_op.raddr.has_smimm_1() and not sigs.is_rotate():
+        if mul_op.raddr_1.has_smimm() and not sigs.is_rotate():
             sigs.add(Instruction.SIGNALS['smimm_c'])
-        if mul_op.raddr.has_smimm_2() and not sigs.is_rotate():
+        if mul_op.raddr_2.has_smimm() and not sigs.is_rotate():
             sigs.add(Instruction.SIGNALS['smimm_d'])
 
 
