@@ -1,3 +1,19 @@
+# Adapting py-videocore to work with the new Raspberry Pi 5
+
+I mostly have no idea what I'm doing so please feel free to help me!
+
+Current status
+- [X] Basic ALU Operations (see tests/test_alu.py)
+- [ ] Conditionals  (might work, not tested)
+- [ ] Updated all tests to work without accumulators
+- [ ] Updated all examples to work without accumulators
+
+Current bugs:
+- [ ] Unpacking and Packing in one operation causes problems? (tests/test_alu.py:fmul)
+
+
+
+# Original README (NEEDS TO BE UPDATED)
 # py-videocore6
 
 A Python library for GPGPU programming on Raspberry Pi 4, which realizes
