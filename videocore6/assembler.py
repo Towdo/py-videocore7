@@ -971,8 +971,8 @@ class SFUIntegrator(Register):
         return ALU(self.asm, self.op_name, dst, src, **kwargs)
 
 
-def _mov_a(asm, dst, src, **kwargs):
-    return ALU(asm, 'bor', dst, src, src, **kwargs)
+# def _mov_a(asm, dst, src, **kwargs):
+#     return ALU(asm, 'bor', dst, src, src, **kwargs)
 
 
 def _rotate_m(self, dst, src, rot, **kwargs):
@@ -1016,7 +1016,7 @@ def _quad_rotate_a(asm, *args, **kwargs):
 
 
 _alias_ops = {
-    'mov': _mov_a,
+    # 'mov': _mov_a,
     'rotate': _rotate_a,
     'quad_rotate': _quad_rotate_a,
 }
