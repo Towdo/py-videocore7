@@ -266,11 +266,11 @@ class Instruction(object):
     REGISTERS = {
         name: Register(name, 1, addr)
         for addr, name in enumerate([
-            'r0',
-            'r1',
-            'r2',
-            'r3',
-            'r4',
+            'UNUSED0',
+            'UNUSED1',
+            'UNUSED2',
+            'UNUSED3',
+            'UNUSED4',
             'r5',
             'null',
             'tlb',
