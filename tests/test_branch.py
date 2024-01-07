@@ -29,28 +29,28 @@ import numpy as np
 @qpu
 def qpu_branch_rel_imm(asm):
 
-    eidx(r0, sig = ldunifrf(rf0))
-    nop(sig = ldunifrf(rf1))
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
+    eidx(rf0, sig = ldunifrf(rf10))
+    nop(sig = ldunifrf(rf11))
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
+    add(rf11, rf11, rf0)
 
-    mov(tmua, rf0, sig = thrsw)
+    mov(tmua, rf10, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(r1))
+    nop(sig = ldtmu(rf1))
 
     b(2*8, cond = 'always')
     nop()
     nop()
     nop()
-    add(r1, r1, 1)
-    add(r1, r1, 1)
-    add(r1, r1, 1) # jump comes here
-    add(r1, r1, 1)
+    add(rf1, rf1, 1)
+    add(rf1, rf1, 1)
+    add(rf1, rf1, 1) # jump comes here
+    add(rf1, rf1, 1)
 
-    mov(tmud, r1)
-    mov(tmua, rf1)
+    mov(tmud, rf1)
+    mov(tmua, rf11)
     tmuwt()
 
     nop(sig = thrsw)
@@ -88,28 +88,28 @@ def test_branch_rel_imm():
 @qpu
 def qpu_branch_abs_imm(asm, absimm):
 
-    eidx(r0, sig = ldunifrf(rf0))
-    nop(sig = ldunifrf(rf1))
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
+    eidx(rf0, sig = ldunifrf(rf10))
+    nop(sig = ldunifrf(rf11))
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
+    add(rf11, rf11, rf0)
 
-    mov(tmua, rf0, sig = thrsw)
+    mov(tmua, rf10, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(r1))
+    nop(sig = ldtmu(rf1))
 
     b(absimm, absolute = True, cond = 'always')
     nop()
     nop()
     nop()
-    add(r1, r1, 1)
-    add(r1, r1, 1)
-    add(r1, r1, 1) # jump comes here
-    add(r1, r1, 1)
+    add(rf1, rf1, 1)
+    add(rf1, rf1, 1)
+    add(rf1, rf1, 1) # jump comes here
+    add(rf1, rf1, 1)
 
-    mov(tmud, r1)
-    mov(tmua, rf1)
+    mov(tmud, rf1)
+    mov(tmua, rf11)
     tmuwt()
 
     nop(sig = thrsw)
@@ -151,31 +151,31 @@ def test_branch_abs_imm():
 @qpu
 def qpu_branch_rel_label(asm):
 
-    eidx(r0, sig = ldunifrf(rf0))
-    nop(sig = ldunifrf(rf1))
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
+    eidx(rf0, sig = ldunifrf(rf10))
+    nop(sig = ldunifrf(rf11))
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
+    add(rf11, rf11, rf0)
 
-    mov(tmua, rf0, sig = thrsw)
+    mov(tmua, rf10, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(r1))
+    nop(sig = ldtmu(rf1))
 
     b(R.foo, cond = 'always')
     nop()
     nop()
     nop()
-    add(r1, r1, 1)
+    add(rf1, rf1, 1)
     L.foo
-    add(r1, r1, 1) # jump comes here
+    add(rf1, rf1, 1) # jump comes here
     L.bar
-    add(r1, r1, 1)
+    add(rf1, rf1, 1)
     L.baz
-    add(r1, r1, 1)
+    add(rf1, rf1, 1)
 
-    mov(tmud, r1)
-    mov(tmua, rf1)
+    mov(tmud, rf1)
+    mov(tmua, rf11)
     tmuwt()
 
     nop(sig = thrsw)
@@ -213,30 +213,30 @@ def test_branch_rel_label():
 @qpu
 def qpu_branch_abs_reg(asm):
 
-    eidx(r0, sig = ldunifrf(rf0))
-    nop(sig = ldunifrf(rf1))
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
+    eidx(rf0, sig = ldunifrf(rf10))
+    nop(sig = ldunifrf(rf11))
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
+    add(rf11, rf11, rf0)
 
-    mov(tmua, rf0, sig = thrsw)
+    mov(tmua, rf10, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(rf2))
+    nop(sig = ldtmu(rf12))
 
-    mov(r1, 0)
-    b(rf2, cond = 'always')
+    mov(rf1, 0)
+    b(rf12, cond = 'always')
     nop()
     nop()
     nop()
     L.label
-    add(r1, r1, 1)
-    add(r1, r1, 1)
-    add(r1, r1, 1)
-    add(r1, r1, 1) # jump comes here
+    add(rf1, rf1, 1)
+    add(rf1, rf1, 1)
+    add(rf1, rf1, 1)
+    add(rf1, rf1, 1) # jump comes here
 
-    mov(tmud, r1)
-    mov(tmua, rf1)
+    mov(tmud, rf1)
+    mov(tmua, rf11)
     tmuwt()
 
     nop(sig = thrsw)
@@ -274,19 +274,19 @@ def test_branch_abs_reg():
 @qpu
 def qpu_branch_link_reg(asm, set_subroutine_link, use_link_reg_direct):
 
-    eidx(r0, sig = ldunifrf(rf0))
-    nop(sig = ldunifrf(rf1))
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
+    eidx(rf0, sig = ldunifrf(rf10))
+    nop(sig = ldunifrf(rf11))
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
+    add(rf11, rf11, rf0)
 
-    mov(tmua, rf0, sig = thrsw)
+    mov(tmua, rf10, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(r2))
+    nop(sig = ldtmu(rf2))
 
-    mov(rf2, 0)
-    mov(rf3, 0)
+    mov(rf12, 0)
+    mov(rf13, 0)
     b(R.init_link, cond = 'always', set_link = True)
     nop() # delay slot
     nop() # delay slot
@@ -294,19 +294,20 @@ def qpu_branch_link_reg(asm, set_subroutine_link, use_link_reg_direct):
     L.init_link
 
     # subroutine returns to here if set_subroutine_link is False.
-    add(rf3, rf3, 1)
+    add(rf13, rf13, 1)
 
     # jump to subroutine once.
-    mov(null, rf2, cond = 'pushz')
+    mov(null, rf12, cond = 'pushz')
     b(R.subroutine, cond = 'alla', set_link = set_subroutine_link)
-    mov(rf2, 1) # delay slot
+    mov(rf12, 1) # delay slot
     nop()       # delay slot
     nop()       # delay slot
 
     # subroutine returns to here if set_subroutine_link is True.
-    shl(r1, 4, 4)
-    mov(tmud, rf3) # rf3 will be 1 if set_subroutine_link, else 2.
-    mov(tmua, rf1).add(rf1, rf1, r1)
+    mov(rf1, 4)
+    shl(rf1, rf1, 4)
+    mov(tmud, rf13) # rf3 will be 1 if set_subroutine_link, else 2.
+    mov(tmua, rf11).add(rf11, rf11, rf1)
     tmuwt()
 
     nop(sig = thrsw)
@@ -320,9 +321,10 @@ def qpu_branch_link_reg(asm, set_subroutine_link, use_link_reg_direct):
 
     L.subroutine
 
-    shl(r1, 4, 4)
-    mov(tmud, r2)
-    mov(tmua, rf1).add(rf1, rf1, r1)
+    mov(rf1, 4)
+    shl(rf1, rf1, 4)
+    mov(tmud, rf2)
+    mov(tmua, rf11).add(rf11, rf11, rf1)
     tmuwt()
 
     if use_link_reg_direct:
@@ -363,9 +365,9 @@ def test_branch_link_reg():
 @qpu
 def qpu_uniform_branch_rel(asm):
 
-    eidx(r0, sig = ldunifrf(rf0))
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
+    eidx(rf0, sig = ldunifrf(rf10))
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
 
     b(R.label, cond = 'always').unif_addr()
     nop()
@@ -373,7 +375,7 @@ def qpu_uniform_branch_rel(asm):
     nop()
     L.label
     nop(sig = ldunifrf(tmud))
-    mov(tmua, rf0)
+    mov(tmua, rf10)
     tmuwt()
 
     nop(sig = thrsw)
@@ -412,9 +414,9 @@ def test_uniform_branch_rel():
 @qpu
 def qpu_uniform_branch_abs(asm):
 
-    eidx(r0, sig = ldunifrf(rf0))
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
+    eidx(rf0, sig = ldunifrf(rf10))
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
 
     b(R.label, cond = 'always').unif_addr(absolute = True)
     nop()
@@ -422,7 +424,7 @@ def qpu_uniform_branch_abs(asm):
     nop()
     L.label
     nop(sig = ldunifrf(tmud))
-    mov(tmua, rf0)
+    mov(tmua, rf10)
     tmuwt()
 
     nop(sig = thrsw)
@@ -462,25 +464,25 @@ def test_uniform_branch_abs():
 def qpu_uniform_branch_reg(asm):
 
 
-    eidx(r0, sig = ldunifrf(rf0))
-    nop(sig = ldunifrf(rf1))
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
+    eidx(rf0, sig = ldunifrf(rf10))
+    nop(sig = ldunifrf(rf11))
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
+    add(rf11, rf11, rf0)
 
-    mov(tmua, rf0, sig = thrsw)
+    mov(tmua, rf10, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(rf2))
+    nop(sig = ldtmu(rf12))
 
-    b(R.label, cond = 'always').unif_addr(rf2)
+    b(R.label, cond = 'always').unif_addr(rf12)
     nop()
     nop()
     nop()
     L.label
-    nop(sig = ldunifrf(rf3))
-    mov(tmud, rf3)
-    mov(tmua, rf1)
+    nop(sig = ldunifrf(rf13))
+    mov(tmud, rf13)
+    mov(tmua, rf11)
     tmuwt()
 
     nop(sig = thrsw)
@@ -516,3 +518,12 @@ def test_uniform_branch_reg():
         end = time.time()
 
         assert (Y == 5).all()
+
+test_branch_rel_imm()
+test_branch_abs_imm()
+test_branch_rel_label()
+test_branch_abs_reg()
+test_branch_link_reg()
+test_uniform_branch_rel()
+test_uniform_branch_abs()
+test_uniform_branch_reg()
