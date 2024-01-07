@@ -31,11 +31,12 @@ import numpy as np
 @qpu
 def qpu_cond_push_a(asm):
 
-    eidx(r0, sig = ldunif)
-    mov(r2, r5)
-    shl(r0, r0, 2)
-    add(r2, r2, r0)
-    shl(r1, 4, 4)
+    eidx(rf0, sig = ldunifrf(rf5))
+    mov(rf2, rf5)
+    shl(rf0, rf0, 2)
+    add(rf2, rf2, rf0)
+    mov(rf1, 4)
+    shl(rf1, rf1, 4)
 
     cond_pairs = [
         ('pushz', 'ifa'),
@@ -44,18 +45,18 @@ def qpu_cond_push_a(asm):
     ]
 
     for cond_push, cond_if in cond_pairs:
-        eidx(r0)
-        sub(r0, r0, 10, cond = cond_push)
-        mov(r0, 0)
-        mov(r0, 1, cond = cond_if)
-        mov(tmud, r0)
-        mov(tmua, r2)
-        tmuwt().add(r2, r2, r1)
-        mov(r0, 0)
-        nop().mov(r0, 1, cond = cond_if)
-        mov(tmud, r0)
-        mov(tmua, r2)
-        tmuwt().add(r2, r2, r1)
+        eidx(rf0)
+        sub(rf0, rf0, 10, cond = cond_push)
+        mov(rf0, 0)
+        mov(rf0, 1, cond = cond_if)
+        mov(tmud, rf0)
+        mov(tmua, rf2)
+        tmuwt().add(rf2, rf2, rf1)
+        mov(rf0, 0)
+        nop().mov(rf0, 1, cond = cond_if)
+        mov(tmud, rf0)
+        mov(tmua, rf2)
+        tmuwt().add(rf2, rf2, rf1)
 
     nop(sig = thrsw)
     nop(sig = thrsw)
@@ -102,40 +103,41 @@ def test_cond_push_a():
 @qpu
 def qpu_cond_push_b(asm):
 
-    eidx(r0, sig = ldunif)
-    mov(r2, r5)
-    shl(r0, r0, 2)
-    add(r2, r2, r0)
-    shl(r1, 4, 4)
+    eidx(rf0, sig = ldunifrf(rf5))
+    mov(rf2, rf5)
+    shl(rf0, rf0, 2)
+    add(rf2, rf2, rf0)
+    mov(rf1, 4)
+    shl(rf1, rf1, 4)
 
-    eidx(r0)
-    sub(null, r0, 10, cond = 'pushz')
-    mov(r0, 0, cond = 'ifa')
-    eidx(r0).mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
+    eidx(rf0)
+    sub(null, rf0, 10, cond = 'pushz')
+    mov(rf0, 0, cond = 'ifa')
+    eidx(rf0).mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
 
-    eidx(r0)
-    sub(null, r0, 5, cond = 'pushz')
-    mov(r0, 0, cond = 'ifa')
-    eidx(r0).mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
-    mov(r0, 0, cond = 'ifb')
-    eidx(r0).mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
+    eidx(rf0)
+    sub(null, rf0, 5, cond = 'pushz')
+    mov(rf0, 0, cond = 'ifa')
+    eidx(rf0).mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
+    mov(rf0, 0, cond = 'ifb')
+    eidx(rf0).mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
 
-    eidx(r0)
-    sub(null, r0, 1, cond = 'pushz')
-    mov(r0, 0, cond = 'ifa')
-    eidx(r0).mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
-    mov(r0, 0, cond = 'ifb')
-    eidx(r0).mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
+    eidx(rf0)
+    sub(null, rf0, 1, cond = 'pushz')
+    mov(rf0, 0, cond = 'ifa')
+    eidx(rf0).mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
+    mov(rf0, 0, cond = 'ifb')
+    eidx(rf0).mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
 
     nop(sig = thrsw)
     nop(sig = thrsw)
@@ -184,33 +186,34 @@ def test_cond_push_b():
 @qpu
 def qpu_cond_update(asm, cond_update_flags):
 
-    eidx(r0, sig = ldunif)
-    mov(r2, r5)
-    shl(r0, r0, 2)
-    add(r2, r2, r0)
-    shl(r1, 4, 4)
+    eidx(rf0, sig = ldunifrf(rf5))
+    mov(rf2, rf5)
+    shl(rf0, rf0, 2)
+    add(rf2, rf2, rf0)
+    mov(rf1, 4)
+    shl(rf1, rf1, 4)
 
     for cond_update_flag in cond_update_flags:
-        eidx(r0)
-        band(r0, r0, 1, cond = 'pushz') # fla = [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]
-        eidx(r0)
-        sub(null, r0, 5, cond = cond_update_flag)
-        mov(r0, 0)
-        mov(r0, 1, cond = 'ifa')
-        mov(tmud, r0)
-        mov(tmua, r2)
-        tmuwt().add(r2, r2, r1)
+        eidx(rf0)
+        band(rf0, rf0, 1, cond = 'pushz') # fla = [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]
+        eidx(rf0)
+        sub(null, rf0, 5, cond = cond_update_flag)
+        mov(rf0, 0)
+        mov(rf0, 1, cond = 'ifa')
+        mov(tmud, rf0)
+        mov(tmua, rf2)
+        tmuwt().add(rf2, rf2, rf1)
 
     for cond_update_flag in cond_update_flags:
-        eidx(r0)
-        band(r0, r0, 1, cond = 'pushz')
-        eidx(r0)
-        add(r3, r0, r0).sub(r0, r0, 5, cond = cond_update_flag)
-        mov(r0, 0)
-        mov(r0, 1, cond = 'ifa')
-        mov(tmud, r0)
-        mov(tmua, r2)
-        tmuwt().add(r2, r2, r1)
+        eidx(rf0)
+        band(rf0, rf0, 1, cond = 'pushz')
+        eidx(rf0)
+        add(rf3, rf0, rf0).sub(rf0, rf0, 5, cond = cond_update_flag)
+        mov(rf0, 0)
+        mov(rf0, 1, cond = 'ifa')
+        mov(tmud, rf0)                  #FIXME: UNcommenting this doesnt break it??
+        mov(tmua, rf2)
+        tmuwt().add(rf2, rf2, rf1)
 
     nop(sig = thrsw)
     nop(sig = thrsw)
@@ -271,65 +274,70 @@ def test_cond_update():
 @qpu
 def qpu_cond_combination(asm):
 
-    eidx(r0, sig = ldunif)
-    mov(r2, r5)
-    shl(r0, r0, 2)
-    add(r2, r2, r0)
-    shl(r1, 4, 4)
+    eidx(rf0, sig = ldunifrf(rf5))
+    mov(rf2, rf5)
+    shl(rf0, rf0, 2)
+    add(rf2, rf2, rf0)
+    mov(rf1, 4)
+    shl(rf1, rf1, 4)
 
     # if / push
-    eidx(r0)
-    sub(r0, r0, 10, cond = 'pushz')
-    eidx(r0)
-    mov(r0, 5, cond = 'ifa').sub(r3, r0, 5, cond = 'pushn')
-    mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
-    eidx(r0)
-    mov(r0, 0, cond = 'ifa')
-    mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
+    eidx(rf0)
+    sub(rf0, rf0, 10, cond = 'pushz')
+    eidx(rf0)
+    mov(rf16, 5)
+    mov(rf0, rf16, cond = 'ifa').sub(rf3, rf0, rf16, cond = 'pushn')
+    mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
+    eidx(rf0)
+    mov(rf0, 0, cond = 'ifa')
+    mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
 
     # push / if
-    eidx(r0)
-    sub(r0, r0, 10, cond = 'pushz')
-    eidx(r0)
-    sub(null, r0, 5, cond = 'pushn').mov(r0, 5, cond = 'ifa')
-    mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
-    eidx(r0)
-    mov(r0, 0, cond = 'ifa')
-    mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
+    eidx(rf0)
+    sub(rf0, rf0, 10, cond = 'pushz')
+    eidx(rf0)
+    mov(rf16, 5)
+    sub(null, rf0, rf16, cond = 'pushn').mov(rf0, rf16, cond = 'ifa')
+    mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
+    eidx(rf0)
+    mov(rf0, 0, cond = 'ifa')
+    mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
 
     # if / if
-    eidx(r0)
-    sub(null, r0, 10, cond = 'pushn')
-    eidx(r3)
-    mov(r0, 0, cond = 'ifna').mov(r3, 0, cond = 'ifna')
-    mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
-    mov(tmud, r3)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
+    eidx(rf0)
+    sub(null, rf0, 10, cond = 'pushn')
+    eidx(rf3)
+    mov(rf16, 0)
+    mov(rf0, rf16, cond = 'ifna').mov(rf3, rf16, cond = 'ifna')
+    mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
+    mov(tmud, rf3)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
 
     # update / if
-    eidx(r0)
-    sub(null, r0, 10, cond = 'pushn')
-    eidx(r3)
-    sub(null, r0, 5, cond = 'andn').mov(r3, 5, cond = 'ifa')
-    eidx(r0)
-    mov(r0, 0, cond = 'ifa')
-    mov(tmud, r0)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
-    mov(tmud, r3)
-    mov(tmua, r2)
-    tmuwt().add(r2, r2, r1)
+    eidx(rf0)
+    sub(null, rf0, 10, cond = 'pushn')
+    eidx(rf3)
+    mov(rf16, 5)
+    sub(null, rf0, rf16, cond = 'andn').mov(rf3, rf16, cond = 'ifa')
+    eidx(rf0)
+    mov(rf0, 0, cond = 'ifa')
+    mov(tmud, rf0)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
+    mov(tmud, rf3)
+    mov(tmua, rf2)
+    tmuwt().add(rf2, rf2, rf1)
 
     nop(sig = thrsw)
     nop(sig = thrsw)
@@ -375,25 +383,26 @@ def test_cond_combination():
 @qpu
 def qpu_cond_vflx(asm, ops):
 
-    eidx(r0, sig = ldunif)
-    mov(r2, r5)
-    shl(r0, r0, 2)
-    add(r2, r2, r0)
-    shl(r1, 4, 4)
+    eidx(rf0, sig = ldunifrf(rf5))
+    mov(rf2, rf5)
+    shl(rf0, rf0, 2)
+    add(rf2, rf2, rf0)
+    mov(rf1, 4)
+    shl(rf1, rf1, 4)
 
     # init fla/flb
-    bxor(rf0, rf0, rf0).sub(rf1, rf1, rf1)
-    eidx(r0)
-    band(null, r0, 1 << 0, cond = 'pushz') # a = [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]
-    band(null, r0, 1 << 1, cond = 'pushz') # a = [1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0], b = [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]
+    bxor(rf10, rf10, rf10).sub(rf11, rf11, rf11)
+    eidx(rf0)
+    band(null, rf0, 1 << 0, cond = 'pushz') # a = [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]
+    band(null, rf0, 1 << 1, cond = 'pushz') # a = [1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0], b = [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]
 
     # flapush
     g = globals()
     for op in ops:
-        g[op](r0)
-        mov(tmud, r0)
-        mov(tmua, r2)
-        tmuwt().add(r2, r2, r1)
+        g[op](rf0)
+        mov(tmud, rf0)
+        mov(tmua, rf2)
+        tmuwt().add(rf2, rf2, rf1)
 
     nop(sig = thrsw)
     nop(sig = thrsw)
@@ -438,106 +447,37 @@ def test_cond_vflx():
 
         for ix, op in enumerate(ops):
             assert (data[ix] == expected(op)).all()
-
-
-# vflx instructions read a condition flag as int16
-@qpu
-def qpu_cond_vflx(asm, ops):
-
-    eidx(r0, sig = ldunif)
-    mov(r2, r5)
-    shl(r0, r0, 2)
-    add(r2, r2, r0)
-    shl(r1, 4, 4)
-
-    # init fla/flb
-    bxor(rf0, rf0, rf0).sub(rf1, rf1, rf1)
-    eidx(r0)
-    band(null, r0, 1 << 0, cond = 'pushz') # a = [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]
-    band(null, r0, 1 << 1, cond = 'pushz') # a = [1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0], b = [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]
-
-    # flapush
-    g = globals()
-    for op in ops:
-        g[op](r0)
-        mov(tmud, r0)
-        mov(tmua, r2)
-        tmuwt().add(r2, r2, r1)
-
-    nop(sig = thrsw)
-    nop(sig = thrsw)
-    nop()
-    nop()
-    nop(sig = thrsw)
-    nop()
-    nop()
-    nop()
-
-def test_cond_vflx():
-
-    def expected(op):
-        result = [
-            np.array([1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0], dtype = 'int16'),
-            np.array([1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], dtype = 'int16'),
-        ][op[-1] == 'b'].repeat(2)
-        if op[3:-1] == 'n':
-            result = 1 - result
-        return result
-
-    ops = [
-        'vfla',
-        'vflna',
-        'vflb',
-        'vflnb',
-    ]
-
-    with Driver() as drv:
-
-        code = drv.program(lambda asm: qpu_cond_vflx(asm, ops))
-        data = drv.alloc((len(ops), 32), dtype = 'int16')
-        unif = drv.alloc(1, dtype = 'uint32')
-
-        data[:] = 0
-
-        unif[0] = data.addresses()[0,0]
-
-        start = time.time()
-        drv.execute(code, unif.addresses()[0])
-        end = time.time()
-
-        for ix, op in enumerate(ops):
-            assert (data[ix] == expected(op)).all()
-
 
 @qpu
 def qpu_cond_flx(asm, ops):
 
-    eidx(r0, sig = ldunif)
-    mov(rf0, r5, sig = ldunif) # in
-    mov(rf1, r5, sig = ldunif)  # out
-    shl(r3, 4, 4).mov(rf2, r5)
+    eidx(rf0, sig = ldunifrf(rf5))
+    mov(rf10, rf5, sig = ldunifrf(rf5)) # in
+    mov(rf11, rf5, sig = ldunifrf(rf5))  # out
+    mov(rf3, 4)
+    shl(rf3, rf3, 4).mov(rf12, rf5)
 
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
-    add(rf2, rf2, r0)
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
+    add(rf11, rf11, rf0)
+    add(rf12, rf12, rf0)
 
-    mov(tmua, rf0, sig = thrsw).add(rf0, rf0, r3)
+    mov(tmua, rf10, sig = thrsw).add(rf10, rf10, rf3)
     nop()
-    mov(tmua, rf1, sig = thrsw).add(rf1, rf1, r3)
-    nop(sig = ldtmu(r1))
+    mov(tmua, rf11, sig = thrsw).add(rf11, rf11, rf3)
+    nop(sig = ldtmu(rf1))
     nop()
-    nop(sig = ldtmu(r2))
+    nop(sig = ldtmu(rf2))
 
     # init fla/flb
-    mov(null, r2, cond = 'pushn')
-    band(null, r2, 1, cond = 'pushz') # fla, flb = ~(r2 & 1), r2 < 0
+    mov(null, rf2, cond = 'pushn')
+    band(null, rf2, 1, cond = 'pushz') # fla, flb = ~(r2 & 1), r2 < 0
 
     g = globals()
     for op in ops:
-        g[op](tmud, r1)
-        mov(tmua, rf2)
-        tmuwt().add(rf2, rf2, r3)
+        g[op](tmud, rf1)
+        mov(tmua, rf12)
+        tmuwt().add(rf12, rf12, rf3)
 
     nop(sig = thrsw)
     nop(sig = thrsw)
@@ -581,3 +521,10 @@ def test_cond_flx():
 
         for ix, op in enumerate(ops):
             assert (Y[ix] == [(X1 << 2) | (3 * [fla,flb][op[2] == 'b']), X1 >> 2][op[2:] == 'pop']).all()
+
+test_cond_push_a()
+test_cond_push_b()
+test_cond_update()
+test_cond_combination()
+test_cond_vflx()
+test_cond_flx()
