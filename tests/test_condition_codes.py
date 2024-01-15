@@ -521,10 +521,3 @@ def test_cond_flx():
 
         for ix, op in enumerate(ops):
             assert (Y[ix] == [(X1 << 2) | (3 * [fla,flb][op[2] == 'b']), X1 >> 2][op[2:] == 'pop']).all()
-
-test_cond_push_a()
-test_cond_push_b()
-test_cond_update()
-test_cond_combination()
-test_cond_vflx()
-test_cond_flx()

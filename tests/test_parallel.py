@@ -26,13 +26,16 @@ from videocore6.driver import Driver
 from videocore6.assembler import qpu
 import numpy as np
 
+# FIXME: Fix those tests (require horizontal vector rotation)
+
 
 @qpu
 def cost(asm):
-    shl(r0, 8, 8)
-    shl(r0, r0, 8)
+    mov(rf0, 8)
+    shl(rf0, rf0, 8)
+    shl(rf0, rf0, 8)
     with loop as l:
-        sub(r0, r0, 1, cond = 'pushn')
+        sub(rf0, rf0, 1, cond = 'pushn')
         l.b(cond = 'anyna')
         nop()
         nop()
@@ -46,19 +49,20 @@ def qpu_serial(asm):
     nop(sig = ldunifrf(rf2))
     nop(sig = ldunifrf(rf3))
 
-    eidx(r0)
-    shl(r0, r0, 2)
-    add(rf2, rf2, r0)
-    add(rf3, rf3, r0)
-    shl(r3, 4, 4)
+    eidx(rf10)
+    shl(rf10, rf10, 2)
+    add(rf2, rf2, rf10)
+    add(rf3, rf3, rf10)
+    mov(rf13, 4)
+    shl(rf13, rf13, 4)
 
     for i in range(16):
-        mov(tmua, rf2, sig = thrsw).add(rf2, rf2, r3)
+        mov(tmua, rf2, sig = thrsw).add(rf2, rf2, rf13)
         nop()
         nop()
-        nop(sig = ldtmu(r0))
-        mov(tmud, r0)
-        mov(tmua, rf3, sig = thrsw).add(rf3, rf3, r3)
+        nop(sig = ldtmu(rf10))
+        mov(tmud, rf10)
+        mov(tmua, rf3, sig = thrsw).add(rf3, rf3, rf13)
         tmuwt()
 
     cost(asm)
@@ -78,39 +82,40 @@ def qpu_serial(asm):
 @qpu
 def qpu_parallel_16(asm):
 
-    tidx(r0, sig = ldunifrf(rf0))
-    shr(r0, r0, 1).mov(r1, 1)
-    shl(r1, r1, 5)
-    sub(r1, r1, 1)
-    band(rf31, r0, r1) # rf31 = (qpu_id * 2) + (thread_id >> 1)
+    tidx(rf10, sig = ldunifrf(rf0))
+    shr(rf10, rf10, 1)
+    mov(rf11, 1)
+    shl(rf11, rf11, 5)
+    sub(rf11, rf11, 1)
+    band(rf31, rf10, rf11) # rf31 = (qpu_id * 2) + (thread_id >> 1)
 
     # rf31 * unif[0,1] * sizeof(float) + (unif.addresses[0,0] + 2 * sizeof(float))
     nop(sig = ldunifrf(rf1))      # rf1 = unif[0,1]
-    shl(r0, rf1, 2)
-    umul24(r0, r0, rf31)
-    add(r1, rf0, 8)
-    add(r0, r0, r1)
-    eidx(r1)
-    shl(r1, r1, 2)
-    add(tmua, r0, r1, sig = thrsw)
+    shl(rf10, rf1, 2)
+    umul24(rf10, rf10, rf31)
+    add(rf11, rf0, 8)
+    add(rf10, rf10, rf11)
+    eidx(rf11)
+    shl(rf11, rf11, 2)
+    add(tmua, rf10, rf11, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(r0))                          # unif[th,2:18]
-    mov(r5rep, r0)
-    mov(rf2, r5).rotate(r5rep, r0, -1)            # rf2 = unif[th,2]
-    mov(rf3, r5)                                  # rf3 = unif[th,3]
+    nop(sig = ldtmu(rf10))                          # unif[th,2:18]
+    mov(rf15rep, rf10)
+    mov(rf2, rf15).rotate(rf15rep, rf10, -1)            # rf2 = unif[th,2]
+    mov(rf3, rf15)                                  # rf3 = unif[th,3]
 
-    eidx(r2)
-    shl(r2, r2, 2)
-    add(tmua, rf2, r2, sig = thrsw)
+    eidx(rf12)
+    shl(rf12, rf12, 2)
+    add(tmua, rf2, rf12, sig = thrsw)
     nop()
     nop()
     nop(sig = ldtmu(rf32))
 
-    eidx(r2)
-    shl(r2, r2, 2)
+    eidx(rf12)
+    shl(rf12, rf12, 2)
     mov(tmud, rf32)
-    add(tmua, rf3, r2)
+    add(tmua, rf3, rf12)
     tmuwt()
 
     cost(asm)
@@ -168,51 +173,51 @@ def test_parallel_16():
 @qpu
 def qpu_barrier(asm):
 
-    tidx(r0, sig = ldunifrf(rf0)) # rf0 = unif[0,0]
-    shr(r2, r0, 2)
-    band(r1, r0, 0b11)            # thread_id
-    band(r2, r2, 0b1111)          # qpu_id
-    shr(r1, r1, 1)
-    shl(r2, r2, 1)
-    add(rf31, r1, r2)             # rf31 = (qpu_id * 2) + (thread_id >> 1)
+    tidx(rf10, sig = ldunifrf(rf0)) # rf0 = unif[0,0]
+    shr(rf12, rf10, 2)
+    band(rf11, rf10, 0b11)            # thread_id
+    band(rf12, rf12, 0b1111)          # qpu_id
+    shr(rf11, rf11, 1)
+    shl(rf12, rf12, 1)
+    add(rf31, rf11, rf12)             # rf31 = (qpu_id * 2) + (thread_id >> 1)
 
     nop(sig = ldunifrf(rf1))      # rf1 = unif[0,1]
 
     # rf31 * unif[0,1] * sizeof(float) + (unif.addresses[0,0] + 2 * sizeof(float))
-    shl(r0, rf1, 2)
-    umul24(r0, r0, rf31)
-    add(r1, rf0, 8)
-    add(r0, r0, r1)
-    eidx(r1)
-    shl(r1, r1, 2)
-    add(tmua, r0, r1, sig = thrsw)
+    shl(rf10, rf1, 2)
+    umul24(rf10, rf10, rf31)
+    add(rf11, rf0, 8)
+    add(rf10, rf10, rf11)
+    eidx(rf11)
+    shl(rf11, rf11, 2)
+    add(tmua, rf10, rf11, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(r0))                          # unif[th,2:18]
-    mov(r5rep, r0)
-    mov(rf2, r5).rotate(r5rep, r0, -1)            # rf2 = unif[th,2]
-    mov(rf3, r5)                                  # rf3 = unif[th,3]
+    nop(sig = ldtmu(rf10))                          # unif[th,2:18]
+    mov(rf15rep, rf10)
+    mov(rf2, rf15).rotate(rf15rep, rf10, -1)            # rf2 = unif[th,2]
+    mov(rf3, rf15)                                  # rf3 = unif[th,3]
 
-    eidx(r2)
-    shl(r2, r2, 2)
-    add(tmua, rf2, r2, sig = thrsw)
+    eidx(rf12)
+    shl(rf12, rf12, 2)
+    add(tmua, rf2, rf12, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(r0))
+    nop(sig = ldtmu(rf10))
 
-    mov(r1, rf31)
-    shl(r1, r1, 8)
+    mov(rf11, rf31)
+    shl(rf11, rf11, 8)
     L.loop
-    sub(r1, r1, 1, cond = 'pushn')
+    sub(rf11, rf11, 1, cond = 'pushn')
     b(R.loop, cond = 'anyna')
     nop()
     nop()
     nop()
 
-    eidx(r2)
-    shl(r2, r2, 2)
-    mov(tmud, r0)
-    add(tmua, rf3, r2)
+    eidx(rf12)
+    shl(rf12, rf12, 2)
+    mov(tmud, rf10)
+    add(tmua, rf3, rf12)
     tmuwt()
 
     barrierid(syncb, sig = thrsw)
@@ -221,31 +226,31 @@ def qpu_barrier(asm):
     band(rf32, rf32, 0b1111) # rf32 = (rf31 + 1) mod 16
 
     # rf32 * unif[0,1] * sizeof(float) + (unif.addresses[0,0] + 2 * sizeof(float))
-    shl(r0, rf1, 2)
-    umul24(r0, r0, rf32)
-    add(r1, rf0, 8)
-    add(r0, r0, r1)
-    eidx(r1)
-    shl(r1, r1, 2)
-    add(tmua, r0, r1, sig = thrsw)
+    shl(rf10, rf1, 2)
+    umul24(rf10, rf10, rf32)
+    add(rf11, rf0, 8)
+    add(rf10, rf10, rf11)
+    eidx(rf11)
+    shl(rf11, rf11, 2)
+    add(tmua, rf10, rf11, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(r0))                          # unif[(th+1)%16,2:18]
-    mov(r5rep, r0)
-    mov(rf4, r5).rotate(r5rep, r0, -1)            # rf4 = unif[(th+1)%16,2]
-    mov(rf5, r5)                                  # rf5 = unif[(th+1)%16,3]
+    nop(sig = ldtmu(rf10))                          # unif[(th+1)%16,2:18]
+    mov(rf15rep, rf10)
+    mov(rf4, rf15).rotate(rf15rep, rf10, -1)            # rf4 = unif[(th+1)%16,2]
+    mov(rf5, rf15)                                  # rf5 = unif[(th+1)%16,3]
 
-    eidx(r2)
-    shl(r2, r2, 2)
-    add(tmua, rf5, r2, sig = thrsw)
+    eidx(rf12)
+    shl(rf12, rf12, 2)
+    add(tmua, rf5, rf12, sig = thrsw)
     nop()
     nop()
-    nop(sig = ldtmu(r0))
+    nop(sig = ldtmu(rf10))
 
-    eidx(r2)
-    shl(r2, r2, 2)
-    mov(tmud, r0)
-    add(tmua, rf3, r2)
+    eidx(rf12)
+    shl(rf12, rf12, 2)
+    mov(tmud, rf10)
+    add(tmua, rf3, rf12)
     tmuwt()
 
     nop(sig = thrsw)

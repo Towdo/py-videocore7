@@ -31,27 +31,28 @@ import numpy as np
 @qpu
 def qpu_signal_ldtmu(asm):
 
-    eidx(r0, sig = ldunif)
-    mov(rf0, r5, sig = ldunif)
-    shl(r3, 4, 4).mov(rf1, r5)
+    eidx(rf0, sig = ldunifrf(rf5))
+    mov(rf10, rf5, sig = ldunifrf(rf5))
+    mov(rf3, 4)
+    shl(rf3, rf3, 4).mov(rf11, rf5)
 
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
+    add(rf11, rf11, rf0)
 
-    mov(tmua, rf0, sig = thrsw).add(rf0, rf0, r3)        # start load X
-    mov(r0, 1.0)                                         # r0 <- 1.0
-    mov(r1, 2.0)                                         # r1 <- 2.0
-    fadd(r0, r0, r0).fmul(r1, r1, r1, sig = ldtmu(rf31)) # r0 <- 2 * r0, r1 <- r1 ^ 2, rf31 <- X
+    mov(tmua, rf10, sig = thrsw).add(rf10, rf10, rf3)        # start load X
+    mov(rf0, 1.0)                                         # r0 <- 1.0
+    mov(rf1, 2.0)                                         # r1 <- 2.0
+    fadd(rf0, rf0, rf0).fmul(rf1, rf1, rf1, sig = ldtmu(rf31)) # r0 <- 2 * r0, r1 <- r1 ^ 2, rf31 <- X
     mov(tmud, rf31)
-    mov(tmua, rf1)
-    tmuwt().add(rf1, rf1, r3)
-    mov(tmud, r0)
-    mov(tmua, rf1)
-    tmuwt().add(rf1, rf1, r3)
-    mov(tmud, r1)
-    mov(tmua, rf1)
-    tmuwt().add(rf1, rf1, r3)
+    mov(tmua, rf11)
+    tmuwt().add(rf11, rf11, rf3)
+    mov(tmud, rf0)
+    mov(tmua, rf11)
+    tmuwt().add(rf11, rf11, rf3)
+    mov(tmud, rf1)
+    mov(tmua, rf11)
+    tmuwt().add(rf11, rf11, rf3)
 
     nop(sig = thrsw)
     nop(sig = thrsw)
@@ -89,33 +90,36 @@ def test_signal_ldtmu():
 @qpu
 def qpu_full_rotate(asm):
 
-    eidx(r0, sig = ldunif)
-    mov(rf0, r5, sig = ldunif)
-    shl(r3, 4, 4).mov(rf1, r5)
+    eidx(rf0, sig = ldunifrf(rf5))
+    mov(rf10, rf5, sig = ldunifrf(rf5))
+    mov(rf3, 4)
+    shl(rf3, rf3, 4).mov(rf11, rf5)
 
-    shl(r0, r0, 2)
-    add(rf0, rf0, r0)
-    add(rf1, rf1, r0)
+    shl(rf0, rf0, 2)
+    add(rf10, rf10, rf0)
+    add(rf11, rf11, rf0)
 
-    mov(tmua, rf0, sig = thrsw).add(rf0, rf0, r3)
+    mov(tmua, rf10, sig = thrsw).add(rf10, rf10, rf3)
     nop()
     nop()
-    nop(sig = ldtmu(r0))
+    nop(sig = ldtmu(rf0))
     nop() # required before rotate
 
     for i in range(-15, 16):
-        nop().add(r1, r0, r0, sig = rot(i))
-        mov(tmud, r1)
-        mov(tmua, rf1)
-        tmuwt().add(rf1, rf1, r3)
+        nop().add(rf1, rf0, rf0)#, sig = rot(i))
+        ror(rf1, rf1, i)
+        mov(tmud, rf1)
+        mov(tmua, rf11)
+        tmuwt().add(rf11, rf11, rf3)
 
     for i in range(-15, 16):
-        mov(r5, i)
+        mov(rf5, i)
         nop() # require
-        nop().add(r1, r0, r0, sig = rot(i))
-        mov(tmud, r1)
-        mov(tmua, rf1)
-        tmuwt().add(rf1, rf1, r3)
+        nop().add(rf1, rf0, rf0)#, sig = rot(i))
+        ror(rf1, rf1, i)
+        mov(tmud, rf1)
+        mov(tmua, rf11)
+        tmuwt().add(rf11, rf11, rf3)
 
     nop(sig = thrsw)
     nop(sig = thrsw)
@@ -142,11 +146,16 @@ def test_full_rotate():
         unif[1] = Y.addresses()[0,0,0]
 
         start = time.time()
+        drv.dump_code(code)
         drv.execute(code, unif.addresses()[0])
         end = time.time()
 
+        print(Y)
+
         expected = np.concatenate([X,X]) * 2
         for ix, rot in enumerate(range(-15, 16)):
+            print(Y[:,ix])
+            print(expected[(-rot%16):(-rot%16)+16])
             assert (Y[:,ix] == expected[(-rot%16):(-rot%16)+16]).all()
 
 

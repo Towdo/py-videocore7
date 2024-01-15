@@ -86,6 +86,8 @@ ops = {
     'clz' : np.vectorize(count_leading_zeros),
     'utof' : lambda x: x.astype(np.float32),
 
+    'exp' : np.exp,
+
     # pack/unpack flags
     'l' : lambda x: x[0::2],
     'h' : lambda x: x[1::2],
@@ -347,6 +349,3 @@ def test_unary_ops():
         ['utof'],
         ('float32', [None]), ('uint32', [None]),
     )
-
-test_unary_ops()
-test_binary_ops()

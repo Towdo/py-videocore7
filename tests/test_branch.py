@@ -518,12 +518,3 @@ def test_uniform_branch_reg():
         end = time.time()
 
         assert (Y == 5).all()
-
-test_branch_rel_imm()
-test_branch_abs_imm()
-test_branch_rel_label()
-test_branch_abs_reg()
-test_branch_link_reg()
-test_uniform_branch_rel()
-test_uniform_branch_abs()
-test_uniform_branch_reg()
