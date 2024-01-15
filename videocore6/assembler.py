@@ -561,14 +561,19 @@ class AddALUOp(ALUOp):
             a_unpack = self.raddr_1.raddr.unpack_bits[0] if isinstance(self.raddr_1.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
             b_unpack = self.raddr_2.raddr.unpack_bits[0] if isinstance(self.raddr_2.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
 
-            op &= ~0b101
-            op |= a_unpack << 2
-            op |= b_unpack
+            op = (op & ~(0x3 << 2)) | (a_unpack << 2)
+            op = (op & ~(0x3 << 0)) | (b_unpack << 0)
 
         if self.name in ['vfmin', 'vfmax']:
 
             a_unpack = self.raddr_1.raddr.unpack_bits[1] if isinstance(self.raddr_1.raddr, Register) else Register.INPUT_MODIFIER['none'][1]
             op |= a_unpack
+
+        if self.name in ['fmov']:
+            a_unpack = self.raddr_1.raddr.unpack_bits[0] if isinstance(self.raddr_1.raddr, Register) else Register.INPUT_MODIFIER['none'][0]
+
+            raddr_b = self.dst.pack_bits
+            raddr_b |= a_unpack << 2
 
         return 0 \
             | (self.dst.magic << 44) \
@@ -578,12 +583,13 @@ class AddALUOp(ALUOp):
             | (raddr_b << 0)
 
     OPERATIONS = {
-        # FADD is FADDNF depending on the order of the mux_a/mux_b.
         'fadd': 0,
         'faddnf': 0,
         'vfpack': 53,
         'add': 56,
+        'vfpack': 57,
         'sub': 60,
+        'vfpack': 61,
         'fsub': 64,
         'imin': 120,
         'imax': 121,
@@ -593,25 +599,22 @@ class AddALUOp(ALUOp):
         'shr': 125,
         'asr': 126,
         'ror': 127,
-        # FMIN is FMAX depending on the order of the mux_a/mux_b.
         'fmin': 128,
         'fmax': 128,
-
         'vfmin': 176,
-
         'band': 181,
         'bor': 182,
         'bxor': 183,
-
+        'vadd': 184,
+        'vsub': 185,
         'bnot': 186,
         'neg': 186,
         'flapush': 186,
         'flbpush': 186,
         'flpop': 186,
-        '_op_recip': 186,
+        'clz': 186,
         'setmsf': 186,
         'setrevf': 186,
-
         'nop': 187,
         'tidx': 187,
         'eidx': 187,
@@ -620,6 +623,8 @@ class AddALUOp(ALUOp):
         'vflna': 187,
         'vflb': 187,
         'vflnb': 187,
+        'xcd': 187,
+        'ycd': 187,
         'msf': 187,
         'revf': 187,
         'iid': 187,
@@ -627,17 +632,21 @@ class AddALUOp(ALUOp):
         'barrierid': 187,
         'tmuwt': 187,
         'vpmwt': 187,
-
-        '_op_rsqrt': 188,
-        '_op_exp': 188,
-        '_op_log': 188,
-        '_op_sin': 188,
-        '_op_rsqrt2': 188,
-
+        'flafirst': 187,
+        'flnafirst': 187,
+        'fxcd': 187,
+        'fycd': 187,
+        'ldvpmv_in': 188,
+        'ldvpmp': 188,
+        'recip': 188,
+        'rsqrt': 188,
+        'exp': 188,
+        'log': 188,
+        'sin': 188,
+        'rsqrt2': 188,
+        'ldvpmg_in': 189,
+        'stvpmv': 190,
         'fcmp': 192,
-
-        'vfmax': 240,
-
         'fround': 245,
         'ftoin': 245,
         'ftrunc': 245,
@@ -645,22 +654,20 @@ class AddALUOp(ALUOp):
         'ffloor': 245,
         'ftouz': 245,
         'fceil': 245,
-        'ftoc': 246,
+        'ftoc': 245,
         'fdx': 246,
         'fdy': 246,
-
-        # The stvpms are distinguished by the waddr field.
-        'stvpmv': 248,
-        'stvpmd': 248,
-        'stvpmp': 248,
-
-        'mov': 249,
-
         'itof': 246,
-        'clz': 186,
         'utof': 246,
+        'vpack': 247,
+        'v8pack': 248,
+        'fmov': 249,
+        'mov': 249,
+        'v10pack': 250,
+        'v11fpack': 251,
     }
 
+    #FIXME: Storing numbers should not be necessary here?
     MUX_A = {
         'nop': 0,
         'tidx': 1,
@@ -686,10 +693,9 @@ class AddALUOp(ALUOp):
         'flapush': 2,
         'flbpush': 3,
         'flpop': 4,
-        # '_op_recip': 5,   #???
+        'clz': 5,
         'setmsf': 6,
         'setrevf': 7,
-
         'nop': 0,
         'tidx': 1,
         'eidx': 2,
@@ -698,7 +704,28 @@ class AddALUOp(ALUOp):
         'vflna': 5,
         'vflb': 6,
         'vflnb': 7,
-
+        'xcd': 8,
+        'ycd': 9,
+        'msf': 10,
+        'revf': 11,
+        'iid': 12,
+        'sampid': 13,
+        'barrierid': 14,
+        'tmuwt': 15,
+        'vpmwt': 16,
+        'flafirst': 17,
+        'flnafirst': 18,
+        'fxcd': 32,
+        'fycd': 36,
+        'ldvpmv_in': 0,
+        'ldvpmd_in': 1,
+        'ldvpmp': 2,
+        'recip': 32,
+        'rsqrt': 33,
+        'exp': 34,
+        'log': 35,
+        'sin': 36,
+        'rsqrt2': 37,
         'fround': 0,
         'ftoin': 3,
         'ftrunc': 16,
@@ -709,26 +736,10 @@ class AddALUOp(ALUOp):
         'ftoc': 51,
         'fdx': 0,
         'fdy': 16,
-
-        'msf': 10,
-        'revf': 11,
-        'iid': 12,
-        'sampid': 13,
-        'barrierid': 14,
-        'tmuwt': 15,
-        'vpmwt': 16,
-
-        '_op_rsqrt': 33,
-        '_op_exp': 34,
-        '_op_log': 35,
-        '_op_sin': 36,
-        '_op_rsqrt2': 37,
-
-        'mov': 3,
-
         'itof': 32,
-        'clz': 5,
         'utof': 36,
+        'fmov': 0,
+        'mov': 3,
     }
 
 
@@ -778,8 +789,12 @@ class MulALUOp(ALUOp):
         'smul24': 9,
         'multop': 10,
         'fmov': 14,
-        'nop': 14,
         'mov': 14,
+        'ftounorm16': 14,
+        'vftounorm8': 14,
+        'vftounorm10lo': 14,
+        'vftounorm10hi': 14,
+        'nop': 14,
         'fmul': 16,
     }
 
@@ -788,9 +803,13 @@ class MulALUOp(ALUOp):
     }
 
     MUX_B = {
-        'nop': 2**6-1,  #FIXME: WHY
-        'mov': 4,
         'fmov': 0,
+        'mov': 3,
+        'ftounorm16': 32,
+        'vftounorm8': 34,
+        'vftounorm10lo': 48,
+        'vftounorm10hi': 49,
+        'nop': 63,
     }
 
 
