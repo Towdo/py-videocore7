@@ -271,7 +271,7 @@ class Instruction(object):
             'UNUSED2',
             'UNUSED3',
             'UNUSED4',
-            'UNUSED5',
+            'r5',
             'null',
             'tlb',
             'tlbu',
