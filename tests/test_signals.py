@@ -146,16 +146,11 @@ def test_full_rotate():
         unif[1] = Y.addresses()[0,0,0]
 
         start = time.time()
-        drv.dump_code(code)
         drv.execute(code, unif.addresses()[0])
         end = time.time()
 
-        print(Y)
-
         expected = np.concatenate([X,X]) * 2
         for ix, rot in enumerate(range(-15, 16)):
-            print(Y[:,ix])
-            print(expected[(-rot%16):(-rot%16)+16])
             assert (Y[:,ix] == expected[(-rot%16):(-rot%16)+16]).all()
 
 
