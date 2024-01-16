@@ -28,11 +28,11 @@ from bench_helper import BenchHelper
 @qpu
 def qpu_clock(asm):
 
-    nop(sig = ldunif)
+    nop(sig = ldunifrf(rf5))
     nop(sig = ldunifrf(rf0))
 
     with loop as l:
-        sub(r5, r5, 1, cond = 'pushn')
+        sub(rf5, rf5, 1, cond = 'pushn')
         l.b(cond = 'anyna')
         nop()
         nop()
@@ -59,7 +59,7 @@ def test_clock():
 
     with Driver() as drv:
 
-        f = pow(2, 25)
+        f = pow(2, 24)
 
         code = drv.program(qpu_clock)
         unif = drv.alloc(2, dtype = 'uint32')
@@ -72,9 +72,11 @@ def test_clock():
 
         with drv.compute_shader_dispatcher() as csd:
             start = time.time()
-            csd.dispatch(code, unif.addresses()[0])
+            csd.dispatch(code, unif.addresses()[0], thread=1)
             bench.wait_address(done)
             end = time.time()
 
         print(f'{end - start:.6f} sec')
         print(f'{f * 5 / (end - start) / 1000 / 1000 * 4:.6f} MHz')
+
+test_clock()
