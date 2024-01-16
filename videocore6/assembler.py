@@ -647,6 +647,7 @@ class AddALUOp(ALUOp):
         'ldvpmg_in': 189,
         'stvpmv': 190,
         'fcmp': 192,
+        'vfmax': 240,
         'fround': 245,
         'ftoin': 245,
         'ftrunc': 245,
