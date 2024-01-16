@@ -78,5 +78,3 @@ def test_clock():
 
         print(f'{end - start:.6f} sec')
         print(f'{f * 5 / (end - start) / 1000 / 1000 * 4:.6f} MHz')
-
-test_clock()
