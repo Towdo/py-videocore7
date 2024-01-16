@@ -43,35 +43,35 @@ def qpu_tmu_load_1_slot_1_qpu(asm, nops):
     nop()
     nop()
 
-    tidx(r0)
-    shr(r0, r0, 2)
-    band(r0, r0, 0b1111, cond = 'pushz')
+    tidx(rf10)
+    shr(rf10, rf10, 2)
+    band(rf10, rf10, 0b1111, cond = 'pushz')
     b(R.done, cond = 'allna')
     nop() # delay slot
     nop() # delay slot
     nop() # delay slot
 
-    eidx(r0)
-    shl(r0, r0, 2)
-    add(rf4, rf4, r0)
+    eidx(rf10)
+    shl(rf10, rf10, 2)
+    add(rf4, rf4, rf10)
 
-    eidx(r0)
-    umul24(r0, r0, rf3)
-    add(rf1, rf1, r0)
+    eidx(rf10)
+    umul24(rf10, rf10, rf3)
+    add(rf1, rf1, rf10)
 
-    mov(r2, 0.0)
+    mov(rf12, 0.0)
     with loop as l:
         mov(tmua, rf1).add(rf1, rf1, rf2)
         for i in range(nops):
             nop()
-        nop(sig = ldtmu(r3))
+        nop(sig = ldtmu(rf13))
         sub(rf0, rf0, 1, cond = 'pushz')
         l.b(cond = 'anyna')
-        fadd(r2, r2, r3) # delay slot
+        fadd(rf12, rf12, rf13) # delay slot
         nop()            # delay slot
         nop()            # delay slot
 
-    mov(tmud, r2)
+    mov(tmud, rf12)
     mov(tmua, rf4)
     tmuwt()
 
@@ -167,47 +167,48 @@ def qpu_tmu_load_2_slot_1_qpu(asm, nops):
     nop()
     nop()
 
-    tidx(r0)
-    shr(r0, r0, 2)
-    band(r0, r0, 0b0011, cond = 'pushz')
+    tidx(rf10)
+    shr(rf10, rf10, 2)
+    band(rf10, rf10, 0b0011, cond = 'pushz')
     b(R.skip_bench, cond = 'allna')
     nop()
     nop()
     nop()
 
-    eidx(r0)
-    shl(r0, r0, 2)
-    add(rf4, rf4, r0)
-    tidx(r0)
-    shr(r0, r0, 2)
-    band(r0, r0, 0b1111)
-    shl(r1, 4, 4)
-    umul24(r0, r0, r1)
-    add(rf4, rf4, r0)
+    eidx(rf10)
+    shl(rf10, rf10, 2)
+    add(rf4, rf4, rf10)
+    tidx(rf10)
+    shr(rf10, rf10, 2)
+    band(rf10, rf10, 0b1111)
+    mov(rf11, 4)
+    shl(rf11, rf11, 4)
+    umul24(rf10, rf10, rf11)
+    add(rf4, rf4, rf10)
 
-    eidx(r0)
-    umul24(r0, r0, rf3)
-    add(rf1, rf1, r0)
-    tidx(r0)
-    shr(r0, r0, 2)
-    band(r0, r0, 0b1111)
-    shl(r1, rf0, 6)
-    umul24(r0, r0, r1)
-    add(rf1, rf1, r0)
+    eidx(rf10)
+    umul24(rf10, rf10, rf3)
+    add(rf1, rf1, rf10)
+    tidx(rf10)
+    shr(rf10, rf10, 2)
+    band(rf10, rf10, 0b1111)
+    shl(rf11, rf0, 6)
+    umul24(rf10, rf10, rf11)
+    add(rf1, rf1, rf10)
 
-    mov(r2, 0.0)
+    mov(rf12, 0.0)
     with loop as l:
         mov(tmua, rf1).add(rf1, rf1, rf2)
         for i in range(nops):
             nop()
-        nop(sig = ldtmu(r3))
+        nop(sig = ldtmu(rf13))
         sub(rf0, rf0, 1, cond = 'pushz')
         l.b(cond = 'anyna')
-        fadd(r2, r2, r3) # delay slot
+        fadd(rf12, rf12, rf13) # delay slot
         nop()            # delay slot
         nop()            # delay slot
 
-    mov(tmud, r2)
+    mov(tmud, rf12)
     mov(tmua, rf4)
     tmuwt()
 
@@ -217,9 +218,9 @@ def qpu_tmu_load_2_slot_1_qpu(asm, nops):
     nop()
     nop()
 
-    tidx(r0)
-    shr(r0, r0, 2)
-    band(r0, r0, 0b1111, cond = 'pushz')
+    tidx(rf10)
+    shr(rf10, rf10, 2)
+    band(rf10, rf10, 0b1111, cond = 'pushz')
     b(R.skip_done, cond = 'allna')
     nop()
     nop()

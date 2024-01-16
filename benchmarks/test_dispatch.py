@@ -29,11 +29,11 @@ from bench_helper import BenchHelper
 @qpu
 def qpu_write_N(asm, N):
 
-    eidx(r0, sig = ldunif)
+    eidx(rf10, sig = ldunifrf(rf15))
     nop(sig = ldunifrf(rf0))
-    shl(r0, r0, 2)
+    shl(rf10, rf10, 2)
     mov(tmud, N)
-    add(tmua, r5, r0)
+    add(tmua, rf15, rf10)
     tmuwt()
 
     mov(tmud, 1)
