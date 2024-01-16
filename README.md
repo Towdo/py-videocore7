@@ -4,9 +4,24 @@ I mostly have no idea what I'm doing so please feel free to help me!
 
 Current status
 - [X] Basic ALU Operations (see tests/test_alu.py)
-- [ ] Conditionals  (might work, not tested)
+- [X] Conditionals  (should work)
 - [ ] Updated all tests to work without accumulators
+  - [X] alu
+  - [X] branch
+  - [X] condition_codes
+  - [X] driver
+  - [X] drm
+  - [X] labels
+  - [ ] parallel
+  - [ ] sfu
+  - [ ] signals
+  - [ ] tmu
+  - [ ] unifa
+  - [X] v3d
 - [ ] Updated all examples to work without accumulators
+  - [X] sgemm.py
+  - [ ] Rest
+- [X] Fixed benchmarks
 
 Current bugs:
 - [ ] Unpacking and Packing in one operation causes problems? (tests/test_alu.py:fmul)
