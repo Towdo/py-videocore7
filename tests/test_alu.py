@@ -52,7 +52,9 @@ ops = {
     'vfmul' : lambda a,b: a * b,
 
     'add' : lambda a,b: a + b,
+    'vadd' : lambda a,b: a + b,
     'sub' : lambda a,b: a - b,
+    'vsub' : lambda a,b: a - b,
     'imin' : np.minimum,
     'imax' : np.maximum,
     'umin' : np.minimum,
@@ -69,6 +71,7 @@ ops = {
 
     # unary ops
     'fmov' : lambda x: x,
+    'mov' : lambda x: x,
     'fround' : np.round,
     'ftrunc' : np.trunc,
     'ffloor' : np.floor,
@@ -159,15 +162,17 @@ def boilerplate_binary_ops(bin_ops, dst, src1, src2):
         Y = drv.alloc((len(cases), 16*4//np.dtype(dst_dtype).itemsize), dtype = dst_dtype)
         unif = drv.alloc(3, dtype = 'uint32')
 
+        bits = np.dtype(dst_dtype).itemsize * 8
+
         if np.dtype(dst_dtype).name.startswith('float'):
             X1[:] = np.random.uniform(-(2**7), 2**7, X1.shape).astype(src1_dtype)
             X2[:] = np.random.uniform(-(2**7), 2**7, X2.shape).astype(src2_dtype)
         elif np.dtype(dst_dtype).name.startswith('int'):
-            X1[:] = np.random.randint(-(2**31), 2**31, X1.shape, dtype=src1_dtype)
-            X2[:] = np.random.randint(-(2**31), 2**31, X2.shape, dtype=src2_dtype)
+            X1[:] = np.random.randint(-(2**(bits-1)), 2**(bits-1), X1.shape, dtype=src1_dtype)
+            X2[:] = np.random.randint(-(2**(bits-1)), 2**(bits-1), X2.shape, dtype=src2_dtype)
         elif np.dtype(dst_dtype).name.startswith('uint'):
-            X1[:] = np.random.randint(0, 2**32, X1.shape, dtype=src1_dtype)
-            X2[:] = np.random.randint(0, 2**32, X2.shape, dtype=src2_dtype)
+            X1[:] = np.random.randint(0, 2**bits, X1.shape, dtype=src1_dtype)
+            X2[:] = np.random.randint(0, 2**bits, X2.shape, dtype=src2_dtype)
         Y[:] = 0.0
 
         unif[0] = X1.addresses()[0]
@@ -212,6 +217,10 @@ def test_binary_ops():
     boilerplate_binary_ops(
         ['add', 'sub', 'imin', 'imax', 'asr'],
         ('int32', [None]), ('int32', [None]), ('int32', [None]),
+    )
+    boilerplate_binary_ops(
+        ['vadd', 'vsub'],
+        ('int16', [None]), ('int16', [None]), ('int16', [None]),
     )
     boilerplate_binary_ops(
         ['add', 'sub', 'umin', 'umax'],
@@ -348,4 +357,186 @@ def test_unary_ops():
     boilerplate_unary_ops(
         ['utof'],
         ('float32', [None]), ('uint32', [None]),
+    )
+
+@qpu
+def qpu_binary_mul_ops(asm, bin_ops, dst_ops, src1_ops, src2_ops):
+
+    eidx(rf10, sig = ldunifrf(rf0))
+    nop(sig = ldunifrf(rf1))
+    nop(sig = ldunifrf(rf2))
+    mov(rf13, 4)
+    shl(rf13, rf13, 4)
+
+    shl(rf10, rf10, 2)
+    add(rf0, rf0, rf10)
+    add(rf1, rf1, rf10)
+    add(rf2, rf2, rf10)
+
+    mov(tmua, rf0, sig = thrsw).add(rf0, rf0, rf13)
+    nop()
+    mov(tmua, rf1, sig = thrsw).add(rf1, rf1, rf13)
+    nop(sig = ldtmu(rf11))
+    nop()
+    nop(sig = ldtmu(rf12))
+
+    g = globals()
+    for op, pack, unpack1, unpack2 in itertools.product(bin_ops, dst_ops, src1_ops, src2_ops):
+        nop().dual_issue(op,
+            rf10.pack(pack) if pack is not None else rf10,
+            rf11.unpack(unpack1) if unpack1 is not None else rf11,
+            rf12.unpack(unpack2) if unpack2 is not None else rf12
+        )
+
+        mov(tmud, rf10)
+        mov(tmua, rf2)
+        tmuwt().add(rf2, rf2, rf13)
+
+    nop(sig = thrsw)
+    nop(sig = thrsw)
+    nop()
+    nop()
+    nop(sig = thrsw)
+    nop()
+    nop()
+    nop()
+
+def boilerplate_binary_mul_ops(bin_ops, dst, src1, src2):
+
+    dst_dtype, dst_ops = dst
+    src1_dtype, src1_ops = src1
+    src2_dtype, src2_ops = src2
+
+    with Driver() as drv:
+
+        cases = list(itertools.product(bin_ops, dst_ops, src1_ops, src2_ops))
+
+        code = drv.program(lambda asm: qpu_binary_mul_ops(asm, bin_ops, dst_ops, src1_ops, src2_ops))
+        X1 = drv.alloc((16*4//np.dtype(src1_dtype).itemsize, ), dtype = src1_dtype)
+        X2 = drv.alloc((16*4//np.dtype(src2_dtype).itemsize, ), dtype = src2_dtype)
+        Y = drv.alloc((len(cases), 16*4//np.dtype(dst_dtype).itemsize), dtype = dst_dtype)
+        unif = drv.alloc(3, dtype = 'uint32')
+
+        bits = np.dtype(dst_dtype).itemsize * 8
+
+        if np.dtype(dst_dtype).name.startswith('float'):
+            X1[:] = np.random.uniform(-(2**7), 2**7, X1.shape).astype(src1_dtype)
+            X2[:] = np.random.uniform(-(2**7), 2**7, X2.shape).astype(src2_dtype)
+        elif np.dtype(dst_dtype).name.startswith('int'):
+            X1[:] = np.random.randint(-(2**(bits-1)), 2**(bits-1), X1.shape, dtype=src1_dtype)
+            X2[:] = np.random.randint(-(2**(bits-1)), 2**(bits-1), X2.shape, dtype=src2_dtype)
+        elif np.dtype(dst_dtype).name.startswith('uint'):
+            X1[:] = np.random.randint(0, 2**bits, X1.shape, dtype=src1_dtype)
+            X2[:] = np.random.randint(0, 2**bits, X2.shape, dtype=src2_dtype)
+        Y[:] = 0.0
+
+        unif[0] = X1.addresses()[0]
+        unif[1] = X2.addresses()[0]
+        unif[2] = Y.addresses()[0,0]
+
+        start = time.time()
+        # drv.dump_code(code)
+        drv.execute(code, unif.addresses()[0], thread=2)
+        end = time.time()
+
+        for ix, (bin_op, dst_op, src1_op, src2_op) in enumerate(cases):
+            msg = '{}({}, {}, {})'.format(bin_op, dst_op, src1_op, src2_op)
+            if np.dtype(dst_dtype).name.startswith('float'):
+                assert np.allclose(ops[dst_op](Y[ix]), ops[bin_op](ops[src1_op](X1), ops[src2_op](X2)), rtol=1e-2), msg
+            elif np.dtype(dst_dtype).name.startswith('int') or np.dtype(dst_dtype).name.startswith('uint'):
+                assert np.all(ops[dst_op](Y[ix]) == ops[bin_op](ops[src1_op](X1), ops[src2_op](X2))), msg
+
+# Here we test that operations that work on both the ADD and MUL Alu work on MUL Alu
+def test_binary_mul_ops():
+    boilerplate_binary_mul_ops(
+        ['add', 'sub'],
+        ('int32', [None]), ('int32', [None]), ('int32', [None]),
+    )
+    boilerplate_binary_mul_ops(
+        ['add', 'sub'],
+        ('uint32', [None]), ('uint32', [None]), ('uint32', [None]),
+    )
+
+@qpu
+def qpu_unary_mul_ops(asm, bin_ops, dst_ops, src_ops):
+
+    eidx(rf10, sig = ldunifrf(rf0))
+    nop(sig = ldunifrf(rf1))
+    mov(rf13, 4)
+    shl(rf13, rf13, 4)
+
+    shl(rf10, rf10, 2)
+    add(rf0, rf0, rf10)
+    add(rf1, rf1, rf10)
+
+    mov(tmua, rf0, sig = thrsw).add(rf0, rf0, rf13)
+    nop()
+    nop()
+    nop(sig = ldtmu(rf11))
+
+    g = globals()
+    for op, pack, unpack in itertools.product(bin_ops, dst_ops, src_ops):
+        nop().dual_issue(op,
+            rf10.pack(pack) if pack is not None else rf10,
+            rf11.unpack(unpack) if unpack is not None else rf11,
+        )
+
+        mov(tmud, rf10)
+        mov(tmua, rf1)
+        tmuwt()
+        add(rf1, rf1, rf13)
+
+    nop(sig = thrsw)
+    nop(sig = thrsw)
+    nop()
+    nop()
+    nop(sig = thrsw)
+    nop()
+    nop()
+    nop()
+
+def boilerplate_unary_mul_ops(uni_ops, dst, src):
+
+    dst_dtype, dst_ops = dst
+    src_dtype, src_ops = src
+
+    with Driver() as drv:
+
+        cases = list(itertools.product(uni_ops, dst_ops, src_ops))
+
+        code = drv.program(lambda asm: qpu_unary_mul_ops(asm, uni_ops, dst_ops, src_ops))
+        X = drv.alloc((16*4//np.dtype(src_dtype).itemsize, ), dtype = src_dtype)
+        Y = drv.alloc((len(cases), 16*4//np.dtype(dst_dtype).itemsize), dtype = dst_dtype)
+        unif = drv.alloc(3, dtype = 'uint32')
+
+        X[:] = np.random.uniform(-(2**15), 2**15, X.shape).astype(src_dtype)
+        Y[:] = 0.0
+
+        unif[0] = X.addresses()[0]
+        unif[1] = Y.addresses()[0,0]
+
+        start = time.time()
+        # drv.dump_code(code)
+        drv.execute(code, unif.addresses()[0], thread=4)
+        end = time.time()
+
+        for ix, (uni_op, dst_op, src_op) in enumerate(cases):
+            msg = '{}({}, {})'.format(uni_op, dst_op, src_op)
+            if np.dtype(dst_dtype).name.startswith('float'):
+                assert np.allclose(ops[dst_op](Y[ix]), ops[uni_op](ops[src_op](X)), rtol=1e-2), msg
+            elif np.dtype(dst_dtype).name.startswith('int') or np.dtype(dst_dtype).name.startswith('uint'):
+                assert np.all(ops[dst_op](Y[ix]) == ops[uni_op](ops[src_op](X))), msg
+
+# Here we test that operations that work on both the ADD and MUL Alu work on MUL Alu
+def test_unary_mul_ops():
+    packs = [('float32', [None, 'none']), ('float16', ['l', 'h'])]
+    unpacks = [('float32', [None, 'none', 'abs']), ('float16', ['l', 'h'])]
+    for dst, src in itertools.product(packs, unpacks):
+        boilerplate_unary_mul_ops(
+            ['fmov'],
+            dst, src,
+        )
+    boilerplate_unary_mul_ops(
+        ['mov'],
+        ('int32', [None]), ('int32', [None]),
     )
