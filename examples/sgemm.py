@@ -262,7 +262,7 @@ def sgemm_rnn_naive():
 
     thread = 8  #FIXME: ONLY 8 Works currently
 
-    assert thread is 8, "Algorithm currenlty only works for 8 threads."
+    assert thread == 8, "Algorithm currenlty only works for 8 threads."
 
     P = 512
     Q = 512
