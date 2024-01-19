@@ -18,7 +18,7 @@ Current status
   - [ ] tmu
   - [ ] unifa
   - [X] v3d
-- [ ] Updated all examples to work without accumulators
+- [ ] Updated all examples to work without accumulators and horizontal vector rotations
   - [X] sgemm.py
   - [ ] Rest
 - [X] Fixed benchmarks
@@ -27,43 +27,46 @@ Current bugs:
 - [ ] Unpacking and Packing in one operation causes problems? (tests/test_alu.py:fmul)
 
 
+# py-videocore7
 
-# Original README (NEEDS TO BE UPDATED)
-# py-videocore6
-
-A Python library for GPGPU programming on Raspberry Pi 4, which realizes
+A Python library for GPGPU programming on Raspberry Pi 5, which realizes
 assembling and running QPU programs.
 
 For Raspberry Pi Zero/1/2/3, use
 [nineties/py-videocore](https://github.com/nineties/py-videocore) instead.
 
+For Raspberry Pi 4, use
+[Idein/py-videocore6](https://github.com/Idein/py-videocore6) instead.
 
-## About VideoCore VI QPU
 
-Raspberry Pi 4 (BCM2711) has a GPU named VideoCore VI QPU in its SoC.
+## About VideoCore VII QPU
+
+Raspberry Pi 5 (BCM2712) has a GPU named VideoCore VII QPU in its SoC.
 The basic instruction set (add/mul ALU dual issue, three delay slots et al.)
-remains the same as VideoCore IV QPU of Raspberry Pi Zero/1/2/3, and some units
+remains the same as VideoCore VI QPU of Raspberry Pi 4, and some units
 now perform differently.
-For instance, the TMU can now write to memory in addition to read, and it seems
-that the VPM DMA is no longer available.
+For instance, horizontal vector rotation does not seem to be possible anymore.
 
 Theoretical peak performance of QPUs are as follows.
 
 - VideoCore IV QPU @ 250MHz: 250 [MHz] x 3 [slice] x 4 [qpu/slice] x 4 [physical core/qpu] x 2 [op/cycle] = 24 [Gflop/s]
 - VideoCore IV QPU @ 300MHz: 300 [MHz] x 3 [slice] x 4 [qpu/slice] x 4 [physical core/qpu] x 2 [op/cycle] = 28.8 [Gflop/s]
 - VideoCore VI QPU @ 500MHz: 500 [MHz] x 2 [slice] x 4 [qpu/slice] x 4 [physical core/qpu] x 2 [op/cycle] = 32 [Gflop/s]
+- VideoCore VII QPU @ 800MHz: 800 [MHz] x 3 [slice] x 4 [qpu/slice] x 4 [physical core/qpu] x 2 [op/cycle] = 76.8 [Gflop/s]
+
+(In my current tests, the GPU clock frequency seems to be 950 MHz?.. This would result in 91.2 [Gflop/s])
 
 
 ## Requirements
 
-`py-videocore6` communicates with the V3D hardware through `/dev/dri/card0`,
+`py-videocore7` communicates with the V3D hardware through `/dev/dri/card0`,
 which is exposed by the DRM V3D driver.
 To access the device, you need to belong to `video` group or be `root` user.
 If you choose the former, run `sudo usermod --append --groups video $USER`
 (re-login to take effect).
 
 
-## Installation
+## Installation (THIS IS NOT UPDATED YET)
 
 You can install `py-videocore6` directly using `pip`:
 
