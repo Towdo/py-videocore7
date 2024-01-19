@@ -155,8 +155,7 @@ def qpu_sgemm_rnn_naive(asm, thread):
             with loop as lk:
 
                 eidx(r0)
-                umul24(r1, r0, reg_A_stride)
-                add(r1, r1, reg_A_cur).add(reg_A_cur, reg_A_cur, 4)
+                mov(r1, reg_A_cur).add(reg_A_cur, reg_A_cur, 4)
                 mov(tmua, r1, sig = thrsw)      # r1 is address in A
                 shl(r2, r0, 2)
                 add(r2, r2, reg_B_cur).add(reg_B_cur, reg_B_cur, reg_B_stride)
@@ -170,7 +169,6 @@ def qpu_sgemm_rnn_naive(asm, thread):
                 for i in range(2, 17):
                     add(r1, r1, reg_A_stride)
                     mov(tmua, r1, sig = thrsw)
-                    nop()
                     nop()
                     nop(sig = ldtmu(r0))
                     mov(r5rep, r0)
