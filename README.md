@@ -1,5 +1,10 @@
 # Adapting py-videocore to work with the new Raspberry Pi 5
 
+Disclaimer: I'm currently not actively working on this anymore since there doesn't seem to be any performance to be gained over the CPU.
+In fact, it seems to be challenging enough to just beat a single core of the CPU using the whole GPU in any real world task.
+Feel free to use this project as a reference on how the GPU works. But think twice before building a project on top of this!
+
+
 I mostly have no idea what I'm doing so please feel free to help me!
 
 Current status
